@@ -129,7 +129,11 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
             </div>
             <div>
               <Label htmlFor="client_id">Client *</Label>
-              <Select name="client_id" onValueChange={(value) => handleSelectChange('client_id', value)}>
+              <Select 
+                name="client_id" 
+                onValueChange={(value) => handleSelectChange('client_id', value)}
+                value={formData.client_id}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a client" />
                 </SelectTrigger>
@@ -195,10 +199,12 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
             </div>
             <div>
               <Label htmlFor="deal_status">Deal Status *</Label>
-              <Select name="deal_status" 
+              <Select 
+                name="deal_status" 
                 onValueChange={(value) => handleSelectChange('deal_status', value)} 
                 required 
-                defaultValue={formData.deal_status ? formData.deal_status : ''}>
+                value={formData.deal_status}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select deal status" />
                 </SelectTrigger>
