@@ -28,7 +28,7 @@ export default async function AddClient() {
 
   return (
     <DashboardLayout user={user}>
-      <AddClientForm />
+      <AddClientForm clientId={null} />
     </DashboardLayout>
   );
 }

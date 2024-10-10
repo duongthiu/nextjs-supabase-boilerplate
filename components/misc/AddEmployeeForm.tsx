@@ -30,9 +30,13 @@ export default function AddEmployeeForm({ employeeId }: { employeeId: string | n
           company_email: '',
           personal_email: '',
           citizenship: '',
-          provisioned: false,
           tax_residence: '',
           location: '',
+          mobile_number: '',
+          home_address: '',
+          birth_date: '',
+          is_active: true,
+          is_deleted: false,
         });
       }
     };
@@ -84,89 +88,118 @@ export default function AddEmployeeForm({ employeeId }: { employeeId: string | n
       <CardContent>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4">
-            <div>
-              <Label htmlFor="given_name">Given Name *</Label>
+
+          <div>
+            <Label htmlFor="given_name">Given Name *</Label>
+            <Input
+              id="given_name"
+              name="given_name"
+              value={(formData as Employee).given_name}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="surname">Surname</Label>
+            <Input
+              id="surname"
+              name="surname"
+              value={(formData as Employee).surname}
+              onChange={handleInputChange}
+            />
+          </div>
+          <div>
+            <Label htmlFor="company_email">Company Email *</Label>
+            <Input
+              id="company_email"
+              name="company_email"
+              type="email"
+              value={(formData as Employee).company_email}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="personal_email">Personal Email *</Label>
+            <Input
+              id="personal_email"
+              name="personal_email"
+              type="email"
+              value={(formData as Employee).personal_email}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="citizenship">Citizenship (2-letter code)</Label>
+            <Input
+              id="citizenship"
+              name="citizenship"
+              value={(formData as Employee).citizenship}
+              onChange={handleInputChange}
+              maxLength={2}
+            />
+          </div>
+          <div>
+            <Label htmlFor="tax_residence">Tax Residence (2-letter code)</Label>
+            <Input
+              id="tax_residence"
+              name="tax_residence"
+              value={(formData as Employee).tax_residence}
+              onChange={handleInputChange}
+              maxLength={2}
+            />
+          </div>
+          <div>
+            <Label htmlFor="location">Location (2-letter code)</Label>
+            <Input
+              id="location"
+              name="location"
+              value={(formData as Employee).location}
+              onChange={handleInputChange}
+              maxLength={2}
+            />
+          </div>
+          <div>
+            <Label htmlFor="mobile_number">Mobile Number</Label>
+            <Input
+              id="mobile_number"
+              name="mobile_number"
+              value={(formData as Employee).mobile_number}
+              onChange={handleInputChange}
+            />
+          </div>
+          <div>
+            <Label htmlFor="home_address">Home Address</Label>
+            <Input
+              id="home_address"
+              name="home_address"
+              value={(formData as Employee).home_address}
+              onChange={handleInputChange}
+            />
+          </div>
+          <div>
+            <Label htmlFor="birth_date">Birth Date</Label>
+            <Input
+              id="birth_date"
+              name="birth_date"
+              type="date"
+              value={(formData as Employee).birth_date}
+              onChange={handleInputChange}
+            />
+          </div>
+          <div>
+            <Label htmlFor="is_active">
               <Input
-                id="given_name"
-                name="given_name"
-                value={(formData as Employee).given_name}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="surname">Surname</Label>
-              <Input
-                id="surname"
-                name="surname"
-                value={(formData as Employee).surname}
+                id="is_active"
+                name="is_active"
+                type="checkbox"
+                checked={(formData as Employee).is_active}
                 onChange={handleInputChange}
               />
-            </div>
-            <div>
-              <Label htmlFor="company_email">Company Email *</Label>
-              <Input
-                id="company_email"
-                name="company_email"
-                type="email"
-                value={(formData as Employee).company_email}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="personal_email">Personal Email *</Label>
-              <Input
-                id="personal_email"
-                name="personal_email"
-                type="email"
-                value={(formData as Employee).personal_email}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="citizenship">Citizenship (2-letter code)</Label>
-              <Input
-                id="citizenship"
-                name="citizenship"
-                value={(formData as Employee).citizenship}
-                onChange={handleInputChange}
-                maxLength={2}
-              />
-            </div>
-            <div>
-              <Label htmlFor="tax_residence">Tax Residence (2-letter code)</Label>
-              <Input
-                id="tax_residence"
-                name="tax_residence"
-                value={(formData as Employee).tax_residence}
-                onChange={handleInputChange}
-                maxLength={2}
-              />
-            </div>
-            <div>
-              <Label htmlFor="location">Location (2-letter code)</Label>
-              <Input
-                id="location"
-                name="location"
-                value={(formData as Employee).location}
-                onChange={handleInputChange}
-                maxLength={2}
-              />
-            </div>
-            <div>
-              <Label htmlFor="provisioned">
-                <Input
-                  id="provisioned"
-                  name="provisioned"
-                  type="checkbox"
-                  checked={(formData as Employee).provisioned}
-                  onChange={handleInputChange}
-                />
-                Provisioned
-              </Label>
-            </div>
+              Active
+            </Label>
+          </div>
             {error && <div className="text-red-500 bg-red-100 p-2 rounded">{error}</div>}
             <div className="flex justify-end space-x-2">
               <Button type="button" variant="outline" onClick={() => router.push('/employees')}>Cancel</Button>

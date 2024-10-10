@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createClient } from '@/utils/supabase/client';
-import { getClients, addProject } from '@/utils/supabase/queries';
+import { getClients, addProject, getProject, updateProject } from '@/utils/supabase/queries';
+import { SupabaseClient } from '@supabase/supabase-js';
 
-export default function AddProjectForm() {
+export default function AddProjectForm({ projectId }: { projectId: string | null }) {
   const [formData, setFormData] = useState({
     code: '',
     name: '',
@@ -20,14 +21,14 @@ export default function AddProjectForm() {
     start_date: '',
     end_date: '',
     deal_status: '',
-    billable: 'false', // Changed to string for Select
+    billable: 'false',
     engagement_manager_email: '',
     note: '',
   });
   const [error, setError] = useState<string | null>(null);
   const [clients, setClients] = useState<any[]>([]);
   const router = useRouter();
-  const supabase = createClient();
+  const supabase: SupabaseClient = createClient();
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -43,14 +44,27 @@ export default function AddProjectForm() {
       }
     };
 
+    const fetchProject = async () => {
+      if (projectId) {
+        const project = await getProject(supabase, projectId);
+        console.log('Project:', project);
+        if (project) {
+          setFormData(project);
+        } else {
+          setError('Failed to fetch project.');
+        }
+      }
+    };
+
     fetchClients();
-  }, []);
+    fetchProject();
+  }, [projectId]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
@@ -71,9 +85,12 @@ export default function AddProjectForm() {
     }
 
     try {
-      const data = await addProject(supabase, formData);
-        console.log('Project added successfully:', data);
-        router.push('/projects');
+      if (projectId) {
+        await updateProject(supabase, { id: projectId, ...formData });
+      } else {
+        await addProject(supabase, formData);
+      }
+      router.push('/projects');
     } catch (error: any) {
       setError(error.message || 'Failed to add project.');
       console.error('Error adding project:', error);
@@ -83,7 +100,7 @@ export default function AddProjectForm() {
   return (
     <Card className="mt-4">
       <CardHeader>
-        <CardTitle>Add New Project</CardTitle>
+        <CardTitle>{projectId ? 'Edit Project' : 'Add New Project'}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit}>
@@ -145,6 +162,18 @@ export default function AddProjectForm() {
               />
             </div>
             <div>
+              <Label htmlFor="engagement_manager_email">Engagement Manager Email *</Label>
+              <Input
+                id="engagement_manager_email"
+                name="engagement_manager_email"
+                type="email"
+                value={formData.engagement_manager_email}
+                onChange={handleInputChange}
+                required
+                maxLength={255}
+              />
+            </div>
+            <div>
               <Label htmlFor="start_date">Start Date</Label>
               <Input
                 id="start_date"
@@ -166,7 +195,10 @@ export default function AddProjectForm() {
             </div>
             <div>
               <Label htmlFor="deal_status">Deal Status *</Label>
-              <Select name="deal_status" onValueChange={(value) => handleSelectChange('deal_status', value)} required>
+              <Select name="deal_status" 
+                onValueChange={(value) => handleSelectChange('deal_status', value)} 
+                required 
+                defaultValue={formData.deal_status ? formData.deal_status : ''}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select deal status" />
                 </SelectTrigger>
@@ -179,26 +211,12 @@ export default function AddProjectForm() {
             </div>
             <div>
               <Label htmlFor="billable">Billable *</Label>
-              <Select name="billable" onValueChange={(value) => handleSelectChange('billable', value)} required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select billable status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">Yes</SelectItem>
-                  <SelectItem value="false">No</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="engagement_manager_email">Engagement Manager Email *</Label>
               <Input
-                id="engagement_manager_email"
-                name="engagement_manager_email"
-                type="email"
-                value={formData.engagement_manager_email}
+                id="billable"
+                name="billable"
+                type="checkbox"
+                checked={formData.billable ? true : false}
                 onChange={handleInputChange}
-                required
-                maxLength={255}
               />
             </div>
             <div>

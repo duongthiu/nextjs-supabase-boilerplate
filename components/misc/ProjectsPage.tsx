@@ -9,7 +9,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import LoadingIndicator from "@/components/ui/loading-indicator";
 import { getProjects } from '@/utils/supabase/queries';
-
+import { useRouter } from 'next/navigation';
 interface Project {
   id: string;
   name: string;
@@ -27,6 +27,7 @@ export default function ProjectsPage({
 }) {
   const [isLoading, setIsLoading] = useState(true);
   const [projects, setProjects] = useState<Project[] | null>(null);
+  const router = useRouter();
 
   const fetchProjects = async () => {
     setIsLoading(true);
@@ -72,7 +73,7 @@ export default function ProjectsPage({
               </thead>
               <tbody>
                 {projects?.map((project) => (
-                  <tr key={project.id} className="border-b">
+                  <tr key={project.id} className="border-b" onClick={() => router.push(`/projects/edit/${project.id}`)}>
                     <td className="p-2">{project.name}</td>
                     <td className="p-2">{project.client_name}</td>
                     <td className="p-2">{project.start_date}</td>

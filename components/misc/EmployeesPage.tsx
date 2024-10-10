@@ -60,7 +60,7 @@ export default function EmployeesPage({
                   <th className="p-2">Name</th>
                   <th className="p-2">Email</th>
                   <th className="p-2">Citizenship</th>
-                  <th className="p-2">Provisioned</th>
+                  <th className="p-2">Active</th>
                   <th className="p-2">Actions</th>
                 </tr>
               </thead>
@@ -84,8 +84,8 @@ export default function EmployeesPage({
                     <td className="p-2">{employee.company_email}</td>
                     <td className="p-2">{employee.citizenship}</td>
                     <td className="p-2">
-                      <span className={`bg-${employee.provisioned ? 'green' : 'red'}-100 text-${employee.provisioned ? 'green' : 'red'}-800 text-xs font-medium px-2 py-1 rounded`}>
-                        {employee.provisioned ? 'Yes' : 'No'}
+                      <span className={`bg-${employee.is_active ? 'green' : 'red'}-100 text-${employee.is_active ? 'green' : 'red'}-800 text-xs font-medium px-2 py-1 rounded`}>
+                        {employee.is_active ? 'Yes' : 'No'}
                       </span>
                     </td>
                     <td className="p-2">

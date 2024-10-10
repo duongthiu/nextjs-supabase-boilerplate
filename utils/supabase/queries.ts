@@ -44,6 +44,7 @@ export async function getEmployees(supabase: SupabaseClient) {
   const { data: employees, error } = await supabase
     .from('Employees')
     .select('*')
+    .eq('is_deleted', false)
     .order('surname', { ascending: true });
 
   if (error) {
@@ -59,6 +60,7 @@ export async function getEmployee(supabase: SupabaseClient, id: string) {
     .from('Employees')
     .select('*')
     .eq('id', id)
+    .eq('is_deleted', false)
     .single();
 
   if (error) {
@@ -69,43 +71,13 @@ export async function getEmployee(supabase: SupabaseClient, id: string) {
   return employee;
 }
 
-export async function getClients(supabase: SupabaseClient) {
-  const { data: clients, error } = await supabase
-    .from('Clients')
-    .select('*')
-    .order('name', { ascending: true });
-
-  if (error) {
-    console.error('Error fetching clients:', error);
-    return null;
-  }
-
-  return clients;
-};
-
-export async function getProjects(supabase: SupabaseClient) {
-  const { data: projects, error } = await supabase
-    .from('Projects')
-    .select('*, Clients(name)')
-    .order('name', { ascending: true });
-
-  if (error) {
-    console.error('Error fetching projects:', error);
-    return null;
-  }
-
-  const projectsWithClientName = projects.map((project) => ({ 
-    ...project,
-    client_name: project.Clients ? project.Clients.name : 'Unknown Client',
-  }));
-
-  return projectsWithClientName;
-};
-
 export async function addEmployee(supabase: SupabaseClient, employeeData: any) {
   const { data, error } = await supabase
     .from('Employees')
-    .insert([employeeData])
+    .insert([{
+      ...employeeData,
+      is_deleted: false
+    }])
     .select();
 
   if (error) {
@@ -119,7 +91,10 @@ export async function addEmployee(supabase: SupabaseClient, employeeData: any) {
 export async function updateEmployee(supabase: SupabaseClient, employeeData: any) {
   const { data, error } = await supabase
     .from('Employees')
-    .update([employeeData])
+    .update([{
+      ...employeeData,
+      updated_at: new Date().toISOString()
+    }])
     .eq('id', employeeData.id)
     .select();
 
@@ -130,6 +105,38 @@ export async function updateEmployee(supabase: SupabaseClient, employeeData: any
 
   return data;
 }
+
+export async function getClients(supabase: SupabaseClient) {
+  const { data: clients, error } = await supabase
+    .from('Clients')
+    .select('*')
+    .eq('is_deleted', false)
+    .order('name', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching clients:', error);
+    return null;
+  }
+
+  return clients;
+};
+
+export async function getClient(supabase: SupabaseClient, id: string) {
+  const { data: client, error } = await supabase
+    .from('Clients')
+    .select('*')
+    .eq('id', id)
+    .eq('is_deleted', false)
+    .single();
+
+  if (error) {
+    console.error('Error fetching client:', error);
+    return null;
+  }
+
+  return client;
+}
+
 
 export async function addClient(supabase: SupabaseClient, clientData: any) {
   const { data, error } = await supabase
@@ -160,6 +167,41 @@ export async function updateClient(supabase: SupabaseClient, clientData: any) {
   return data;
 }
 
+export async function getProjects(supabase: SupabaseClient) {
+  const { data: projects, error } = await supabase
+    .from('Projects')
+    .select('*, Clients(name)')
+    .order('name', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching projects:', error);
+    return null;
+  }
+
+  const projectsWithClientName = projects.map((project) => ({ 
+    ...project,
+    client_name: project.Clients ? project.Clients.name : 'Unknown Client',
+  }));
+
+  return projectsWithClientName;
+};
+
+export async function getProject(supabase: SupabaseClient, id: string) {
+  const { data: project, error } = await supabase
+    .from('Projects')
+    .select('*')
+    .eq('id', id)
+    // .eq('is_deleted', false)
+    .single();
+
+  if (error) {
+    console.error('Error fetching project:', error);
+    return null;
+  }
+
+  return project;
+}
+    
 export async function addProject(supabase: SupabaseClient, projectData: any) {
   const { data, error } = await supabase
     .from('Projects')
