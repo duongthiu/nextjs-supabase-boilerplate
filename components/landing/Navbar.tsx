@@ -1,19 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuList
-} from '@/components/ui/navigation-menu';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger
-} from '@/components/ui/sheet';
-
+import { NavigationMenu, NavigationMenuList } from '@/components/ui/navigation-menu';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 import { ModeToggle } from './mode-toggle';
@@ -22,10 +9,14 @@ import { createApiClient } from '@/utils/supabase/api';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 
-export const Navbar = ({ user }: { user: User | null }) => {
+interface NavbarProps {
+  user: User | null;
+  onMenuClick: () => void;
+}
+
+export const Navbar = ({ user, onMenuClick }: NavbarProps) => {
   const router = useRouter();
   const api = createApiClient(createClient());
-  const [isOpen, setIsOpen] = useState<boolean>(false);
   
   const handleAuth = async () => {
     if (user) {
@@ -36,20 +27,28 @@ export const Navbar = ({ user }: { user: User | null }) => {
 
   return (
     <header className="sticky border-b-[1px] top-0 z-40 w-full bg-white dark:border-b-slate-700 dark:bg-background">
-      <NavigationMenu className="mx-auto">
-        <NavigationMenuList className="container h-14 px-4 w-screen flex justify-end items-center">
-          <div className="flex gap-2 items-center">
-            <Button
-              onClick={handleAuth}
-              className="border"
-              variant="secondary"
-            >
-              {user ? 'Account' : 'Sign In'}
-            </Button>
-            <ModeToggle />
-          </div>
-        </NavigationMenuList>
-      </NavigationMenu>
+      <div className="h-14 px-4 flex items-center justify-between lg:justify-end">
+        {/* Mobile menu button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="lg:hidden"
+          onClick={onMenuClick}
+        >
+          <Menu className="h-6 w-6" />
+        </Button>
+
+        <div className="flex gap-2 items-center">
+          <Button
+            onClick={handleAuth}
+            className="border"
+            variant="secondary"
+          >
+            {user ? 'Account' : 'Sign In'}
+          </Button>
+          <ModeToggle />
+        </div>
+      </div>
     </header>
   );
 };
