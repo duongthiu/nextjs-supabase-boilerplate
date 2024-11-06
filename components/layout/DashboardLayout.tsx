@@ -9,10 +9,10 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ user, children }: DashboardLayoutProps) {
   return (
-    <div className="flex flex-col h-screen bg-background">
-      <Navbar user={user} />
-      <div className="flex flex-1">
-        <Sidebar />
+    <div className="flex h-screen bg-background">
+      <Sidebar />
+      <div className="flex flex-col flex-1">
+        <Navbar user={user} />
         <main className="flex-1 p-8">
           {children}
         </main>

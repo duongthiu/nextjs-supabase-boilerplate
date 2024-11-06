@@ -4,12 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Bell, Users, Briefcase, Settings } from "lucide-react";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { LogoIcon } from '../landing/Icons';
 
 export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 bg-card p-4 shadow-md">
+    <aside className="w-64 bg-card p-4 shadow-md flex flex-col">
+      {/* Logo and Title */}
+      <div className="mb-8">
+        <Link href="/" className="flex items-center gap-2 font-bold text-xl">
+          <LogoIcon />
+          <span className="font-bold">NextJS Supabase Boilerplate</span>
+        </Link>
+      </div>
+
+      {/* Navigation */}
       <nav className="space-y-2">
         <Link href="/employees">
           <Button 
@@ -38,15 +48,6 @@ export function Sidebar() {
             Projects
           </Button>
         </Link>
-        {/* <Button variant="ghost" className="w-full justify-start">
-          <Bell className="mr-2 h-4 w-4" />
-          Notifications
-          <span className="ml-auto bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">12</span>
-        </Button>
-        <Button variant="ghost" className="w-full justify-start">
-          <Settings className="mr-2 h-4 w-4" />
-          Settings
-        </Button> */}
       </nav>
     </aside>
   );

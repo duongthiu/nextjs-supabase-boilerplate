@@ -38,8 +38,14 @@ npm run dev
 
 5. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+6. **Set Up Supabase Database**:
+   - Navigate to your Supabase project dashboard.
+   - Go to the SQL editor.
+   - Upload and run the `schema.sql` file to create the necessary tables in your Supabase database.
 
-6. Optional: Sign up for Supabase and create a new project.
-Create a new project in Supabase and get the project URL and anon key.
-Create Supabase tables by running the script on schema.sql file.
-Update the .env file with the Supabase project URL and anon key.
+```bash
+-- Example command to run schema.sql
+\i path/to/schema.sql
+```
+
+Make sure to replace `path/to/schema.sql` with the actual path to your `schema.sql` file.
