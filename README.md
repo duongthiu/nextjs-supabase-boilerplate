@@ -37,3 +37,9 @@ npm run dev
 ```
 
 5. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+
+6. Optional: Sign up for Supabase and create a new project.
+Create a new project in Supabase and get the project URL and anon key.
+Create Supabase tables by running the script on schema.sql file.
+Update the .env file with the Supabase project URL and anon key.
