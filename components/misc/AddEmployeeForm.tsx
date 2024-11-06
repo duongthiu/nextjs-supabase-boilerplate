@@ -13,7 +13,20 @@ import { Employee } from '@/utils/types';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 export default function AddEmployeeForm({ employeeId }: { employeeId: string | null }) {
-  const [formData, setFormData] = useState<Employee | {}>({});
+  const [formData, setFormData] = useState<Employee | {}>({
+    given_name: '',
+    surname: '',
+    company_email: '',
+    personal_email: '',
+    citizenship: '',
+    tax_residence: '',
+    location: '',
+    mobile_number: '',
+    home_address: '',
+    birth_date: '',
+    is_active: true,
+    is_deleted: false,
+});
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
@@ -23,21 +36,6 @@ export default function AddEmployeeForm({ employeeId }: { employeeId: string | n
         const supabase: SupabaseClient = createClient();
         const employee = await getEmployee(supabase, employeeId);
         setFormData(employee);
-      } else {
-        setFormData({
-          given_name: '',
-          surname: '',
-          company_email: '',
-          personal_email: '',
-          citizenship: '',
-          tax_residence: '',
-          location: '',
-          mobile_number: '',
-          home_address: '',
-          birth_date: '',
-          is_active: true,
-          is_deleted: false,
-        });
       }
     };
 

@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { createClient } from '@/utils/supabase/client';
 import { getClients, addProject, getProject, updateProject } from '@/utils/supabase/queries';
 import { SupabaseClient } from '@supabase/supabase-js';
+import  Autocomplete from '@/components/ui/autocomplete';
+import SearchableSelect from '@/components/ui/autocomplete-searchable';
 
 export default function AddProjectForm({ projectId }: { projectId: string | null }) {
   const [formData, setFormData] = useState({
@@ -26,7 +28,7 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
     note: '',
   });
   const [error, setError] = useState<string | null>(null);
-  const [clients, setClients] = useState<any[]>([]);
+  const [clients, setClients] = useState<{ id: string; name: string; }[]>([]);
   const router = useRouter();
   const supabase: SupabaseClient = createClient();
 
@@ -69,6 +71,7 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
   };
 
   const handleSelectChange = (name: string, value: string) => {
+    console.log('Selected value:', value);
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -96,6 +99,24 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
       console.error('Error adding project:', error);
     }
   };
+
+  // const ClientDropdown = () => {
+  //   // Convert your clients to the required format
+  //   const options = clients.map(client => ({
+  //     id: client.id,
+  //     label: client.name
+  //   }));
+  
+  //   return (
+  //     <SearchableSelect
+  //       options={options}
+  //       value={formData.client_id}
+  //       onChange={(value) => setFormData(prev => ({ ...prev, client_id: value as string }))}
+  //       placeholder="Select a client"
+  //       searchPlaceholder="Search clients..."
+  //     />
+  //   );
+  // };
 
   return (
     <Card className="mt-4">
@@ -129,21 +150,16 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
             </div>
             <div>
               <Label htmlFor="client_id">Client *</Label>
-              <Select 
-                name="client_id" 
-                onValueChange={(value) => handleSelectChange('client_id', value)}
-                value={formData.client_id}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a client" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Autocomplete
+                options={clients.map(client => ({ id: client.id, name: client.name }))}
+                formData={formData}
+                setFormData={setFormData}
+                fieldName="client_id"
+              />
             </div>
+            {/* <div>
+              <ClientDropdown />
+            </div> */}
             <div>
               <Label htmlFor="currency">Currency</Label>
               <Input

@@ -12,7 +12,15 @@ import { Client } from '@/utils/types';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 export default function AddClientForm({ clientId }: { clientId: string | null}) {
-  const [formData, setFormData] = useState<Client | {}>({});
+  const [formData, setFormData] = useState<Client | {}>({
+    name: '',
+    client_code: '',
+    address: '',
+    postal_code: '',
+    country_code_iso_2: '',
+    is_active: true,
+    is_deleted: false,
+  });
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
@@ -22,16 +30,6 @@ export default function AddClientForm({ clientId }: { clientId: string | null}) 
         const supabase: SupabaseClient = createClient();
         const client = await getClient(supabase, clientId);
         setFormData(client);
-      } else {
-        setFormData({
-          name: '',
-          client_code: '',
-          address: '',
-          postal_code: '',
-          country_code_iso_2: '',
-          is_active: true,
-          is_deleted: false,
-        });
       }
     };
 
