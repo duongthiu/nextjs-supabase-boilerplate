@@ -28,7 +28,7 @@ export default async function AddProject() {
 
   return (
     <DashboardLayout user={user}>
-      <AddProjectForm />
+      <AddProjectForm projectId={null}/>
     </DashboardLayout>
   );
 }
