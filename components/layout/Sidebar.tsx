@@ -1,10 +1,10 @@
 'use client'
 
 import { Button } from "@/components/ui/button";
-import { Bell, Users, Briefcase, Settings, X } from "lucide-react";
+import { Users, Briefcase, X } from "lucide-react";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LogoIcon } from '../landing/Icons';
+import { Logo } from './Logo';
 
 interface SidebarProps {
   onClose?: () => void;
@@ -17,10 +17,7 @@ export function Sidebar({ onClose }: SidebarProps) {
     <aside className="w-64 bg-card p-4 shadow-md flex flex-col h-full">
       {/* Logo and Title */}
       <div className="mb-8 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <LogoIcon />
-          <span className="font-bold text-base lg:text-xl">NextJS Supabase</span>
-        </Link>
+        <Logo />
         {onClose && (
           <Button
             variant="ghost"
