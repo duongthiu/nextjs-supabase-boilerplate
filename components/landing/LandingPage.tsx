@@ -1,45 +1,24 @@
-// import { User } from '@supabase/supabase-js';
-// import { Navbar } from './Navbar';
-// import { Hero } from './Hero';
-// import { Sponsors } from './Sponsors';
-// import { About } from './About';
-// import { HowItWorks } from './HowItWorks';
-// import { Features } from './Features';
-// import { Services } from './Services';
-// import { Cta } from './Cta';
-// import { Testimonials } from './Testimonials';
-// import { Team } from './Team';
-// import { Pricing } from './Pricing';
-// import { Newsletter } from './Newsletter';
-// import { FAQ } from './FAQ';
-// import { Footer } from './Footer';
-// import { ScrollToTop } from './ScrollToTop';
+'use client'
 
-// export default function LandingPage({ user }: { user: User }) {
-//   return (
-//     <>
-//       <Navbar user={user} />
-//       <Hero />
-//       <Sponsors />
-//       <About />
-//       <HowItWorks />
-//       <Features />
-//       <Services />
-//       <Cta />
-//       <Testimonials />
-//       <Team />
-//       <Pricing user={user} />
-//       <Newsletter />
-//       <FAQ />
-//       <Footer />
-//       <ScrollToTop />
-//     </>
-//   );
-// }
+import { User } from '@supabase/supabase-js';
+import { Navbar } from '../layout/Navbar';
+import { Features } from './Features';
+import { Footer } from './Footer';
 
-// import { User } from '@supabase/supabase-js';
-// import HomePage from './HomePage';
-
-// export default function LandingPage({ user }: { user: User }) {
-//   return <HomePage user={user} />;
-// }
+export default function LandingPage({ user }: { user: User | null }) {
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar user={user} onMenuClick={() => {}} />
+      <main className="container mx-auto px-4 py-8">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold mb-4">Welcome to Next.js Supabase Boilerplate</h1>
+          <p className="text-xl text-muted-foreground">
+            A solid foundation for building scalable web applications
+          </p>
+        </div>
+        <Features />
+      </main>
+      <Footer />
+    </div>
+  );
+}

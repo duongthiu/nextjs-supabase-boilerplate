@@ -1,279 +1,99 @@
 'use client';
-import Link from 'next/link';
 
+import { useState } from 'react';
+import { createClient } from '@/utils/supabase/client';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useEffect, useState } from 'react';
-import { SiGithub, SiGoogle } from '@icons-pack/react-simple-icons';
-import { createApiClient } from '@/utils/supabase/api';
-import { createClient } from '@/utils/supabase/client';
-import { useToast } from '../ui/use-toast';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { AuthState, StateInfo } from '@/utils/types';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from '@/components/ui/use-toast';
+import Link from 'next/link';
 
-export function AuthForm({ state }: { state: AuthState }) {
-  const { toast } = useToast();
-  const api = createApiClient(createClient());
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const [authState, setAuthState] = useState(state);
-  const [loading, setLoading] = useState(false);
+export default function AuthForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const stateInfo: Record<AuthState, StateInfo> = {
-    signup: {
-      title: 'Sign Up',
-      submitText: 'Sign Up',
-      hasEmailField: true,
-      hasPasswordField: true,
-      hasOAuth: false,
-      onSubmit: async () => {
-        setLoading(true);
-        try {
-          await api.passwordSignup({ email, password });
-          await api.passwordSignin({ email, password });
-          router.refresh();
-        } catch (e) {
-          if (e instanceof Error) {
-            toast({
-              title: 'Auth Error',
-              description: e.message,
-              variant: 'destructive'
-            });
-          }
-        }
-        setLoading(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        window.location.href = '/';
       }
-    },
-    signin: {
-      title: 'Sign In',
-      submitText: 'Sign In',
-      hasEmailField: true,
-      hasPasswordField: true,
-      hasOAuth: true,
-      onSubmit: async () => {
-        setLoading(true);
-        try {
-          await api.passwordSignin({ email, password });
-          router.refresh();
-        } catch (e) {
-          if (e instanceof Error) {
-            toast({
-              title: 'Auth Error',
-              description: e.message,
-              variant: 'destructive'
-            });
-          }
-        }
-        setLoading(false);
-      }
-    },
-    forgot_password: {
-      title: 'Reset Password',
-      submitText: 'Send Email',
-      hasEmailField: true,
-      hasPasswordField: false,
-      hasOAuth: false,
-      onSubmit: async () => {
-        setLoading(true);
-        try {
-          await api.passwordReset(email);
-          toast({
-            title: 'Email Sent!',
-            description: 'Check your email to reset your password'
-          });
-        } catch (e) {
-          if (e instanceof Error) {
-            toast({
-              title: 'Auth Error',
-              description: e.message,
-              variant: 'destructive'
-            });
-          }
-        }
-        setLoading(false);
-      }
-    },
-    update_password: {
-      title: 'Update Password',
-      submitText: 'Update Password',
-      hasEmailField: false,
-      hasPasswordField: true,
-      hasOAuth: false,
-      onSubmit: async () => {
-        setLoading(true);
-        try {
-          await api.passwordUpdate(password);
-          toast({
-            title: 'Password Updated',
-            description: 'Redirecting to the home page...'
-          });
-          setTimeout(() => router.replace('/'), 3000);
-          router.replace('/');
-        } catch (e) {
-          if (e instanceof Error) {
-            toast({
-              title: 'Auth Error',
-              description: e.message,
-              variant: 'destructive'
-            });
-          }
-        }
-        setLoading(false);
-      }
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  // add toast if error
-  useEffect(() => {
-    type ToastVariant = 'destructive' | 'default' | undefined | null;
-    const title = searchParams.get('toast_title') || undefined;
-    const description = searchParams.get('toast_description') || undefined;
-    const variant = searchParams.get('toast_variant') as ToastVariant;
-    if (title || description) {
-      setTimeout(
-        () =>
-          toast({
-            title,
-            description,
-            variant
-          }),
-        100
-      );
-    }
-  }, []);
-
-  const currState = stateInfo[authState];
   return (
-    <Card className="mx-auto w-96 mx-4">
+    <Card>
       <CardHeader>
-        <CardTitle className="text-2xl">{currState.title}</CardTitle>
-        {currState.description && (
-          <CardDescription>{currState.description}</CardDescription>
-        )}
+        <CardTitle>Sign In</CardTitle>
+        <CardDescription>
+          Enter your email and password to access your account
+        </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="grid gap-4">
-          {currState.hasEmailField && (
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="m@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={loading}
-                required
-              />
-            </div>
-          )}
-          {currState.hasPasswordField && (
-            <div className="grid gap-2">
-              <div className="flex items-center">
-                <Label htmlFor="password">Password</Label>
-                {authState === 'signin' && (
-                  <Link
-                    href="#"
-                    onClick={() => setAuthState(AuthState.ForgotPassword)}
-                    className="ml-auto inline-block text-sm underline"
-                  >
-                    Forgot your password?
-                  </Link>
-                )}
-              </div>
-              <Input
-                id="password"
-                type="password"
-                disabled={loading}
-                value={password}
-                required
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-          )}
-          <Button
-            type="submit"
+      <form onSubmit={handleSubmit}>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+        </CardContent>
+        <CardFooter className="flex flex-col space-y-4">
+          <Button 
+            type="submit" 
             className="w-full"
-            onClick={currState.onSubmit}
             disabled={loading}
           >
-            {currState.submitText}
+            {loading ? 'Signing in...' : 'Sign In'}
           </Button>
-          {authState === 'signin' && (
-            <div className="text-center text-sm">
-              Don&apos;t have an account?{' '}
-              <Link
-                href="#"
-                className="underline"
-                onClick={() => setAuthState(AuthState.Signup)}
-              >
-                Sign up
-              </Link>
-            </div>
-          )}
-          {authState === 'signup' && (
-            <div className="text-center text-sm">
-              Already have an account?{' '}
-              <Link
-                href="#"
-                className="underline"
-                onClick={() => setAuthState(AuthState.Signin)}
-              >
-                Sign in
-              </Link>
-            </div>
-          )}
-          {authState === 'forgot_password' && (
-            <div className="text-center text-sm">
-              Know your password?{' '}
-              <Link
-                href="#"
-                className="underline"
-                onClick={() => setAuthState(AuthState.Signin)}
-              >
-                Sign in
-              </Link>
-            </div>
-          )}
-          {currState.hasOAuth && (
-            <>
-              <div className="relative my-3">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t"></span>
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    Or continue with
-                  </span>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => api.oauthSignin('google')}
-              >
-                <SiGoogle className="h-4 w-4 mr-2" /> Google
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => api.oauthSignin('github')}
-              >
-                <SiGithub className="h-4 w-4 mr-2" /> Github
-              </Button>
-            </>
-          )}
-        </div>
-      </CardContent>
+          <div className="text-sm text-center text-muted-foreground">
+            Don't have an account?{' '}
+            <Link href="/auth/signup" className="text-primary hover:underline">
+              Sign up
+            </Link>
+          </div>
+        </CardFooter>
+      </form>
     </Card>
   );
 }
