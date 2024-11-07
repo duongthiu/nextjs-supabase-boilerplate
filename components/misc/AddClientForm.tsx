@@ -83,82 +83,86 @@ export default function AddClientForm({ clientId }: { clientId: string | null}) 
   };
 
   return (
-    <Card className="mt-4">
-      <CardHeader>
-        <CardTitle>{clientId ? 'Edit Client' : 'Add New Client'}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4">
-            <div>
-              <Label htmlFor="name">Name *</Label>
-              <Input
-                id="name"
-                name="name"
-                value={(formData as Client).name}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="client_code">Client Code * (max 8 characters)</Label>
-              <Input
-                id="client_code"
-                name="client_code"
-                value={(formData as Client).client_code}
-                onChange={handleInputChange}
-                required
-                maxLength={8}
-              />
-            </div>
-            <div>
-              <Label htmlFor="address">Address</Label>
-              <Input
-                id="address"
-                name="address"
-                value={(formData as Client).address}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div>
-              <Label htmlFor="postal_code">Postal Code (max 8 characters)</Label>
-              <Input
-                id="postal_code"
-                name="postal_code"
-                value={(formData as Client).postal_code}
-                onChange={handleInputChange}
-                maxLength={8}
-              />
-            </div>
-            <div>
-              <Label htmlFor="country_code_iso_2">Country Code (ISO-2) *</Label>
-              <Input
-                id="country_code_iso_2"
-                name="country_code_iso_2"
-                value={(formData as Client).country_code_iso_2}
-                onChange={handleInputChange}
-                required
-                maxLength={2}
-              />
-            </div>
-            <div>
-              <Label htmlFor="is_active">Is Active</Label>
-              <Input
-                id="is_active"
-                name="is_active"
-                type="checkbox"
-                checked={(formData as Client).is_active}
-                onChange={handleInputChange}
-              />
-            </div>
-            {error && <div className="text-red-500 bg-red-100 p-2 rounded">{error}</div>}
-            <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={() => router.push('/clients')}>Cancel</Button>
-              <Button type="submit">Submit</Button>
-            </div>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+    <div className="container mx-auto">
+      <main className="flex-1 p-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>{clientId ? 'Edit Client' : 'Add New Client'}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit}>
+              <div className="grid gap-4">
+                <div>
+                  <Label htmlFor="name">Name *</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    value={(formData as Client).name}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="client_code">Client Code * (max 8 characters)</Label>
+                  <Input
+                    id="client_code"
+                    name="client_code"
+                    value={(formData as Client).client_code}
+                    onChange={handleInputChange}
+                    required
+                    maxLength={8}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="address">Address</Label>
+                  <Input
+                    id="address"
+                    name="address"
+                    value={(formData as Client).address}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="postal_code">Postal Code (max 8 characters)</Label>
+                  <Input
+                    id="postal_code"
+                    name="postal_code"
+                    value={(formData as Client).postal_code}
+                    onChange={handleInputChange}
+                    maxLength={8}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="country_code_iso_2">Country Code (ISO-2) *</Label>
+                  <Input
+                    id="country_code_iso_2"
+                    name="country_code_iso_2"
+                    value={(formData as Client).country_code_iso_2}
+                    onChange={handleInputChange}
+                    required
+                    maxLength={2}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="is_active">Is Active</Label>
+                  <Input
+                    id="is_active"
+                    name="is_active"
+                    type="checkbox"
+                    checked={(formData as Client).is_active}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                {error && <div className="text-red-500 bg-red-100 p-2 rounded">{error}</div>}
+                <div className="flex justify-end space-x-2">
+                  <Button type="button" variant="outline" onClick={() => router.push('/clients')}>Cancel</Button>
+                  <Button type="submit">Submit</Button>
+                </div>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </main>
+    </div>
   );
 }

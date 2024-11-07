@@ -100,164 +100,167 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
     }
   };
 
-  // const ClientDropdown = () => {
-  //   // Convert your clients to the required format
-  //   const options = clients.map(client => ({
-  //     id: client.id,
-  //     label: client.name
-  //   }));
+  const ClientDropdown = () => {
+    const options = clients.map(client => ({
+      id: client.id,
+      label: client.name
+    }));
   
-  //   return (
-  //     <SearchableSelect
-  //       options={options}
-  //       value={formData.client_id}
-  //       onChange={(value) => setFormData(prev => ({ ...prev, client_id: value as string }))}
-  //       placeholder="Select a client"
-  //       searchPlaceholder="Search clients..."
-  //     />
-  //   );
-  // };
+    return (
+      <SearchableSelect
+        options={options}
+        value={formData.client_id}
+        onChange={(value) => setFormData(prev => ({ ...prev, client_id: value as string }))}
+        placeholder="Select a client"
+        searchPlaceholder="Search clients..."
+      />
+    );
+  };
 
   return (
-    <Card className="mt-4">
-      <CardHeader>
-        <CardTitle>{projectId ? 'Edit Project' : 'Add New Project'}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4">
-            <div>
-              <Label htmlFor="code">Project Code *</Label>
-              <Input
-                id="code"
-                name="code"
-                value={formData.code}
-                onChange={handleInputChange}
-                required
-                maxLength={50}
-              />
-            </div>
-            <div>
-              <Label htmlFor="name">Project Name *</Label>
-              <Input
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-                maxLength={255}
-              />
-            </div>
-            <div>
-              <Label htmlFor="client_id">Client *</Label>
-              <Autocomplete
-                options={clients.map(client => ({ id: client.id, name: client.name }))}
-                formData={formData}
-                setFormData={setFormData}
-                fieldName="client_id"
-              />
-            </div>
-            {/* <div>
-              <ClientDropdown />
-            </div> */}
-            <div>
-              <Label htmlFor="currency">Currency</Label>
-              <Input
-                id="currency"
-                name="currency"
-                value={formData.currency}
-                onChange={handleInputChange}
-                maxLength={6}
-              />
-            </div>
-            <div>
-              <Label htmlFor="contract_owner">Contract Owner *</Label>
-              <Input
-                id="contract_owner"
-                name="contract_owner"
-                value={formData.contract_owner}
-                onChange={handleInputChange}
-                required
-                maxLength={50}
-              />
-            </div>
-            <div>
-              <Label htmlFor="engagement_manager_email">Engagement Manager Email *</Label>
-              <Input
-                id="engagement_manager_email"
-                name="engagement_manager_email"
-                type="email"
-                value={formData.engagement_manager_email}
-                onChange={handleInputChange}
-                required
-                maxLength={255}
-              />
-            </div>
-            <div>
-              <Label htmlFor="start_date">Start Date</Label>
-              <Input
-                id="start_date"
-                name="start_date"
-                type="date"
-                value={formData.start_date}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div>
-              <Label htmlFor="end_date">End Date</Label>
-              <Input
-                id="end_date"
-                name="end_date"
-                type="date"
-                value={formData.end_date}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div>
-              <Label htmlFor="deal_status">Deal Status *</Label>
-              <Select 
-                name="deal_status" 
-                onValueChange={(value) => handleSelectChange('deal_status', value)} 
-                required 
-                value={formData.deal_status}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select deal status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="PENDING">Pending</SelectItem>
-                  <SelectItem value="WON">Won</SelectItem>
-                  <SelectItem value="LOST">Lost</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="billable">Billable *</Label>
-              <Input
-                id="billable"
-                name="billable"
-                type="checkbox"
-                checked={formData.billable ? true : false}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div>
-              <Label htmlFor="note">Note</Label>
-              <Input
-                id="note"
-                name="note"
-                value={formData.note}
-                onChange={handleInputChange}
-              />
-            </div>
-            {error && <div className="text-red-500 bg-red-100 p-2 rounded">{error}</div>}
-            <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={() => router.push('/projects')}>Cancel</Button>
-              <Button type="submit">Submit</Button>
-            </div>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+    <div className="container mx-auto">
+      <main className="flex-1 p-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>{projectId ? 'Edit Project' : 'Add New Project'}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit}>
+              <div className="grid gap-4">
+                <div>
+                  <Label htmlFor="code">Project Code *</Label>
+                  <Input
+                    id="code"
+                    name="code"
+                    value={formData.code}
+                    onChange={handleInputChange}
+                    required
+                    maxLength={50}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="name">Project Name *</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    required
+                    maxLength={255}
+                  />
+                </div>
+                {/* <div>
+                  <Label htmlFor="client_id">Client *</Label>
+                  <Autocomplete
+                    options={clients.map(client => ({ id: client.id, name: client.name }))}
+                    formData={formData}
+                    setFormData={setFormData}
+                    fieldName="client_id"
+                  />
+                </div> */}
+                <div>
+                  <ClientDropdown />
+                </div>
+                <div>
+                  <Label htmlFor="currency">Currency</Label>
+                  <Input
+                    id="currency"
+                    name="currency"
+                    value={formData.currency}
+                    onChange={handleInputChange}
+                    maxLength={6}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="contract_owner">Contract Owner *</Label>
+                  <Input
+                    id="contract_owner"
+                    name="contract_owner"
+                    value={formData.contract_owner}
+                    onChange={handleInputChange}
+                    required
+                    maxLength={50}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="engagement_manager_email">Engagement Manager Email *</Label>
+                  <Input
+                    id="engagement_manager_email"
+                    name="engagement_manager_email"
+                    type="email"
+                    value={formData.engagement_manager_email}
+                    onChange={handleInputChange}
+                    required
+                    maxLength={255}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="start_date">Start Date</Label>
+                  <Input
+                    id="start_date"
+                    name="start_date"
+                    type="date"
+                    value={formData.start_date}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="end_date">End Date</Label>
+                  <Input
+                    id="end_date"
+                    name="end_date"
+                    type="date"
+                    value={formData.end_date}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="deal_status">Deal Status *</Label>
+                  <Select 
+                    name="deal_status" 
+                    onValueChange={(value) => handleSelectChange('deal_status', value)} 
+                    required 
+                    value={formData.deal_status}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select deal status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PENDING">Pending</SelectItem>
+                      <SelectItem value="WON">Won</SelectItem>
+                      <SelectItem value="LOST">Lost</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="billable">Billable *</Label>
+                  <Input
+                    id="billable"
+                    name="billable"
+                    type="checkbox"
+                    checked={formData.billable ? true : false}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="note">Note</Label>
+                  <Input
+                    id="note"
+                    name="note"
+                    value={formData.note}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                {error && <div className="text-red-500 bg-red-100 p-2 rounded">{error}</div>}
+                <div className="flex justify-end space-x-2">
+                  <Button type="button" variant="outline" onClick={() => router.push('/projects')}>Cancel</Button>
+                  <Button type="submit">Submit</Button>
+                </div>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </main>
+    </div>
   );
 }
