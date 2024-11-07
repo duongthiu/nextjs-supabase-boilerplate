@@ -6,6 +6,7 @@ import { PHProvider } from './providers';
 import { ThemeProvider } from '@/components/landing/theme-provider';
 import dynamic from 'next/dynamic';
 import { Toaster } from '@/components/ui/toaster';
+import { Navbar } from '@/components/layout/Navbar';
 
 const PostHogPageView = dynamic(() => import('./PostHogPageView'), {
   ssr: false

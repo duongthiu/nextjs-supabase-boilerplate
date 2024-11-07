@@ -1,6 +1,6 @@
 'use client';
 
-import { Navbar } from '../landing/Navbar';
+import { Navbar } from './Navbar';
 import { Sidebar } from './Sidebar';
 import { User } from '@supabase/supabase-js';
 import { useState, Suspense } from 'react';
