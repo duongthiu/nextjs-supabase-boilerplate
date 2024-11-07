@@ -84,14 +84,7 @@ export default function ClientsPage({ user }: ClientsPageProps) {
                       </span>
                     </td>
                     <td className="p-2">
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/clients/edit/${client.id}`);
-                        }}
-                      >
+                      <Button variant="ghost" size="icon">
                         <Settings className="h-4 w-4" />
                       </Button>
                     </td>
