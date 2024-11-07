@@ -3,7 +3,7 @@
 import { Navbar } from '../landing/Navbar';
 import { Sidebar } from './Sidebar';
 import { User } from '@supabase/supabase-js';
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 
 interface DashboardLayoutProps {
   user: User;
@@ -34,7 +34,9 @@ export function DashboardLayout({ user, children }: DashboardLayoutProps) {
       <div className="flex flex-col flex-1 min-w-0">
         <Navbar user={user} onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 p-4 md:p-8 overflow-auto">
-          {children}
+          <Suspense fallback={<div>Loading...</div>}>
+            {children}
+          </Suspense>
         </main>
       </div>
     </div>

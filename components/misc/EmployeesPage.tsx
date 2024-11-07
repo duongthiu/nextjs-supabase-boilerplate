@@ -1,46 +1,48 @@
 'use client'
 
+import { useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
-import { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/utils/supabase/client';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Settings } from "lucide-react";
-import Link from "next/link";
-import { useState, useEffect } from "react";
-import LoadingIndicator from "@/components/ui/loading-indicator";
-import { getEmployees } from "@/utils/supabase/queries";
+import { getEmployees } from '@/utils/supabase/queries';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { Employee } from '@/utils/types';
 
-export default function EmployeesPage({
-  user
-}: {
+interface EmployeesPageProps {
   user: User;
-}) {
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
-  const [employees, setEmployees] = useState<Employee[] | null>(null);
-  
-  const fetchEmployees = async () => {
-    setIsLoading(true);
-    const supabase:SupabaseClient = createClient();
-    const employees = await getEmployees(supabase);
-    setEmployees(employees);
-    setIsLoading(false);
-  };
+}
 
+export default function EmployeesPage({ user }: EmployeesPageProps) {
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  
   useEffect(() => {
-    fetchEmployees();
+    async function loadEmployees() {
+      try {
+        const supabase = createClient();
+        const employeesData = await getEmployees(supabase);
+        if (employeesData) {
+          setEmployees(employeesData);
+        }
+      } catch (error) {
+        console.error('Error loading employees:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadEmployees();
   }, []);
 
-  if (isLoading) {
-    return <LoadingIndicator />;
+  if (loading) {
+    return <div>Loading...</div>;
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="container mx-auto px-4">
       <main className="flex-1 p-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
@@ -50,42 +52,31 @@ export default function EmployeesPage({
             </Link>
           </CardHeader>
           <CardContent>
-            {/* <div className="flex space-x-2 mb-4">
-              <Button variant="default">Active</Button>
-              <Button variant="secondary">Inactive</Button>
-            </div> */}
             <table className="w-full">
               <thead>
                 <tr className="text-left bg-muted">
-                  <th className="p-2">Name</th>
+                  <th className="p-2">Given Name</th>
+                  <th className="p-2">Surname</th>
                   <th className="p-2">Email</th>
-                  <th className="p-2">Citizenship</th>
-                  <th className="p-2">Active</th>
+                  <th className="p-2">Phone</th>
+                  <th className="p-2">Status</th>
                   <th className="p-2">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {employees?.map((employee) => (
-                  <tr key={employee.id} className="border-b" onClick={() => {
-                    router.push(`/employees/edit/${employee.id}`); 
-                  }}>
-                    <td className="p-2">
-                      <div className="flex items-center space-x-2">
-                        <Avatar>
-                          <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${employee.given_name} ${employee.surname}`} alt={`${employee.given_name} ${employee.surname}`} />
-                          <AvatarFallback>{employee.given_name[0]}{employee.surname?.[0]}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div>{`${employee.given_name} ${employee.surname}`}</div>
-                          <div className="text-sm text-muted-foreground">{employee.company_email}</div>
-                        </div>
-                      </div>
-                    </td>
+                  <tr 
+                    key={employee.id} 
+                    className="border-b hover:bg-muted/50 cursor-pointer"
+                    onClick={() => router.push(`/employees/edit/${employee.id}`)}
+                  >
+                    <td className="p-2">{employee.given_name}</td>
+                    <td className="p-2">{employee.surname}</td>
                     <td className="p-2">{employee.company_email}</td>
-                    <td className="p-2">{employee.citizenship}</td>
+                    <td className="p-2">{employee.mobile_number}</td>
                     <td className="p-2">
                       <span className={`bg-${employee.is_active ? 'green' : 'red'}-100 text-${employee.is_active ? 'green' : 'red'}-800 text-xs font-medium px-2 py-1 rounded`}>
-                        {employee.is_active ? 'Yes' : 'No'}
+                        {employee.is_active ? 'Active' : 'Inactive'}
                       </span>
                     </td>
                     <td className="p-2">
