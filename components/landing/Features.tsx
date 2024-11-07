@@ -37,13 +37,11 @@ const features: FeatureProps[] = [
 
 const featureList: string[] = [
   'Dark/Light theme',
-  'Reviews',
-  'Features',
-  'Pricing',
-  'Contact form',
-  'Our team',
-  'Responsive design',
-  'Newsletter',
+  'Employee Management ',
+  'Client Management',
+  'Project Management',
+  'Allocation Management',
+  'Reporting',
   'Minimalist'
 ];
 
