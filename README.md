@@ -44,6 +44,10 @@ npm install
 npm run dev
 ```
 
+Default login credentials:
+- Email: admin@test.com
+- Password: Aa123456@
+
 5. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 6. **Optional: Set Up Supabase Database**:
