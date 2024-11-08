@@ -11,7 +11,6 @@ import {
   CardTitle
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Navbar } from '@/components/layout/Navbar';
 import { Logo } from '@/components/layout/Logo';
 import { User } from '@supabase/supabase-js';
 import { createClient } from '@/utils/supabase/client';
@@ -20,14 +19,13 @@ import { getURL } from '@/utils/helpers';
 import { useToast } from '@/components/ui/use-toast';
 import { useRouter } from 'next/navigation';
 import { createApiClient } from '@/utils/supabase/api';
-import { SubscriptionWithPriceAndProduct } from '@/utils/types';
 
 export default function AccountPage({
   user,
   subscription
 }: {
   user: User;
-  subscription: SubscriptionWithPriceAndProduct;
+  subscription: any;
 }) {
   const supabase = createClient();
   const { toast } = useToast();

@@ -1,35 +1,27 @@
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
-import { Navbar } from '@/components/landing/Navbar';
-import AuthForm from '@/components/misc/AuthForm';
-import { AuthState } from '@/utils/types';
+import AuthForm, { AuthState } from '@/components/misc/AuthForm';
+import { Navbar } from '@/components/layout/Navbar';
 
-export default async function SignIn({
-  params
-}: {
-  params: { id: string };
-  searchParams: { disable_button: boolean };
-}) {
-  if (!Object.values(AuthState).includes(params.id as AuthState)) {
-    redirect('/auth');
-  }
-  const currState = params.id as AuthState;
-
-  // Check if the user is already logged in and redirect to the account page if so
+export default async function Auth({ params }: { params: { id: string } }) {
   const supabase = createClient();
+
   const {
     data: { user }
   } = await supabase.auth.getUser();
 
-  if (user && currState !== 'update_password') {
+  if (user) {
     return redirect('/');
-  } else if (!user && currState === 'update_password') {
-    return redirect('/auth');
+  }
+
+  const currState = params.id as AuthState;
+  if (!['signin', 'signup', 'forgot_password'].includes(currState)) {
+    return redirect('/auth/signin');
   }
 
   return (
-    <div className="flex flex-col h-screen">
-      <Navbar user={user} />
+    <div className="flex min-h-screen flex-col bg-background">
+      <Navbar user={user} onMenuClick={() => {}} />
       <div className="flex grow justify-center items-center">
         <AuthForm state={currState} />
       </div>

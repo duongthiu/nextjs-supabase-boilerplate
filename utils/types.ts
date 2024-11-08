@@ -1,5 +1,3 @@
-import { Tables } from '@/types_db';
-
 export enum AuthState {
   Signin = 'signin',
   ForgotPassword = 'forgot_password',
@@ -15,18 +13,6 @@ export type StateInfo = {
   hasEmailField: boolean;
   hasPasswordField: boolean;
   hasOAuth: boolean;
-};
-
-type Subscription = Tables<'subscriptions'>;
-type Price = Tables<'prices'>;
-type Product = Tables<'products'>;
-
-export type SubscriptionWithPriceAndProduct = Subscription & {
-  prices:
-    | (Price & {
-        products: Product | null;
-      })
-    | null;
 };
 
 export type Employee = {

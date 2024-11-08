@@ -325,23 +325,37 @@ export async function getAllocations(
 }
 
 export async function getAllocation(supabase: SupabaseClient, id: string) {
-  const { data: allocation, error } = await supabase
+  // First, get the basic allocation data
+  const { data: allocation, error: allocationError } = await supabase
     .from('Allocations')
-    .select(`
-      *,
-      Employees(given_name, surname),
-      Projects(name, code)
-    `)
+    .select('*')
     .eq('id', id)
     .eq('is_deleted', false)
     .single();
 
-  if (error) {
-    console.error('Error fetching allocation:', error);
+  if (allocationError) {
+    console.error('Error fetching allocation:', allocationError);
     return null;
   }
 
-  return allocation;
+  // Then get the employee and project details separately
+  const { data: employee } = await supabase
+    .from('Employees')
+    .select('given_name, surname')
+    .eq('id', allocation.employee_id)
+    .single();
+
+  const { data: project } = await supabase
+    .from('Projects')
+    .select('name, code')
+    .eq('id', allocation.project_id)
+    .single();
+
+  return {
+    ...allocation,
+    Employees: employee,
+    Projects: project
+  };
 }
 
 export async function addAllocation(supabase: SupabaseClient, allocationData: any) {
@@ -362,13 +376,16 @@ export async function addAllocation(supabase: SupabaseClient, allocationData: an
 }
 
 export async function updateAllocation(supabase: SupabaseClient, allocationData: any) {
+  // Remove nested objects before update
+  const { Employees, Projects, employee_name, project_name, ...updateData } = allocationData;
+  
   const { data, error } = await supabase
     .from('Allocations')
-    .update([{
-      ...allocationData,
+    .update({
+      ...updateData,
       updated_at: new Date().toISOString()
-    }])
-    .eq('id', allocationData.id)
+    })
+    .eq('id', updateData.id)
     .select();
 
   if (error) {

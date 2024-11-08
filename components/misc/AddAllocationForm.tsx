@@ -23,6 +23,11 @@ interface Project {
   name: string;
 }
 
+interface FormattedOption {
+  id: string;
+  name: string;
+}
+
 export default function AddAllocationForm({ allocationId }: { allocationId: string | null }) {
   const [formData, setFormData] = useState({
     employee_id: '',
@@ -33,8 +38,8 @@ export default function AddAllocationForm({ allocationId }: { allocationId: stri
     is_deleted: false,
   });
   const [error, setError] = useState<string | null>(null);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [employees, setEmployees] = useState<FormattedOption[]>([]);
+  const [projects, setProjects] = useState<FormattedOption[]>([]);
   const router = useRouter();
   const supabase: SupabaseClient = createClient();
 
@@ -44,7 +49,7 @@ export default function AddAllocationForm({ allocationId }: { allocationId: stri
         // Fetch employees
         const { employees: employeesData } = await getEmployees(supabase);
         if (employeesData) {
-          const formattedEmployees = employeesData.map(emp => ({
+          const formattedEmployees: FormattedOption[] = employeesData.map(emp => ({
             id: emp.id,
             name: `${emp.given_name} ${emp.surname}`
           }));
@@ -54,7 +59,7 @@ export default function AddAllocationForm({ allocationId }: { allocationId: stri
         // Fetch projects
         const { projects: projectsData } = await getProjects(supabase);
         if (projectsData) {
-          const formattedProjects = projectsData.map(proj => ({
+          const formattedProjects: FormattedOption[] = projectsData.map(proj => ({
             id: proj.id,
             name: `${proj.code} - ${proj.name}`
           }));
