@@ -6,7 +6,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle
 } from '@/components/ui/card';
@@ -15,51 +14,19 @@ import { Logo } from '@/components/layout/Logo';
 import { User } from '@supabase/supabase-js';
 import { createClient } from '@/utils/supabase/client';
 import { useState } from 'react';
-import { getURL } from '@/utils/helpers';
 import { useToast } from '@/components/ui/use-toast';
 import { useRouter } from 'next/navigation';
 import { createApiClient } from '@/utils/supabase/api';
 
 export default function AccountPage({
-  user,
-  subscription
+  user
 }: {
   user: User;
-  subscription: any;
 }) {
   const supabase = createClient();
   const { toast } = useToast();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-
-  const handleBillingPortal = async () => {
-    setLoading(true);
-    const { data, error } = await supabase.functions.invoke('get_stripe_url', {
-      body: {
-        return_url: getURL('/account')
-      }
-    });
-    if (error) {
-      setLoading(false);
-      return toast({
-        title: 'Error Occured',
-        description: error.message,
-        variant: 'destructive'
-      });
-    }
-    const redirectUrl = data?.redirect_url;
-    if (!redirectUrl) {
-      setLoading(false);
-      return toast({
-        title: 'An unknown error occurred.',
-        description:
-          'Please try again later or contact a system administrator.',
-        variant: 'destructive'
-      });
-    }
-    router.push(redirectUrl);
-    setLoading(false);
-  };
 
   const handleSignOut = async () => {
     setLoading(true);
@@ -115,21 +82,6 @@ export default function AccountPage({
                   <Input placeholder="Email" value={user.email} disabled />
                 </form>
               </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Your Plan</CardTitle>
-                <CardDescription>
-                  {subscription
-                    ? `You are currently on the ${subscription?.prices?.products?.name} plan.`
-                    : 'You are not currently subscribed to any plan.'}
-                </CardDescription>
-              </CardHeader>
-              <CardFooter className="border-t px-6 py-4 flex space-between">
-                <Button onClick={handleBillingPortal} disabled={loading}>
-                  Manage subscription
-                </Button>
-              </CardFooter>
             </Card>
           </div>
         </div>
