@@ -10,6 +10,7 @@ import { createClient } from '@/utils/supabase/client';
 import { addClient, updateClient, getClient } from '@/utils/supabase/queries';
 import { Client } from '@/utils/types';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { CustomCheckbox } from '@/components/ui/custom-checkbox';
 
 export default function AddClientForm({ clientId }: { clientId: string | null}) {
   const [formData, setFormData] = useState<Client | {}>({
@@ -144,13 +145,13 @@ export default function AddClientForm({ clientId }: { clientId: string | null}) 
                   />
                 </div>
                 <div>
-                  <Label htmlFor="is_active">Is Active</Label>
-                  <Input
+                  <CustomCheckbox
                     id="is_active"
-                    name="is_active"
-                    type="checkbox"
+                    label="Active"
                     checked={(formData as Client).is_active}
-                    onChange={handleInputChange}
+                    onChange={(checked) => 
+                      setFormData(prev => ({ ...prev, is_active: checked }))
+                    }
                   />
                 </div>
                 {error && <div className="text-red-500 bg-red-100 p-2 rounded">{error}</div>}

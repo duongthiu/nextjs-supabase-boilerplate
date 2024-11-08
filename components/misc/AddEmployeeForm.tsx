@@ -11,6 +11,7 @@ import { addEmployee, updateEmployee, getEmployee } from '@/utils/supabase/queri
 import { useEffect } from 'react';
 import { Employee } from '@/utils/types';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { CustomCheckbox } from '@/components/ui/custom-checkbox';
 
 export default function AddEmployeeForm({ employeeId }: { employeeId: string | null }) {
   const [formData, setFormData] = useState<Employee | {}>({
@@ -189,16 +190,14 @@ export default function AddEmployeeForm({ employeeId }: { employeeId: string | n
                 />
               </div>
               <div>
-                <Label htmlFor="is_active">
-                  <Input
-                    id="is_active"
-                    name="is_active"
-                    type="checkbox"
-                    checked={(formData as Employee).is_active}
-                    onChange={handleInputChange}
-                  />
-                  Active
-                </Label>
+                <CustomCheckbox
+                  id="is_active"
+                  label="Active"
+                  checked={(formData as Employee).is_active}
+                  onChange={(checked) => 
+                    setFormData(prev => ({ ...prev, is_active: checked }))
+                  }
+                />
               </div>
                 {error && <div className="text-red-500 bg-red-100 p-2 rounded">{error}</div>}
                 <div className="flex justify-end space-x-2">

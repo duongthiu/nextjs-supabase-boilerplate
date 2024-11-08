@@ -11,6 +11,7 @@ import { createClient } from '@/utils/supabase/client';
 import { getClients, addProject, getProject, updateProject, searchClients } from '@/utils/supabase/queries';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Autocomplete } from '@/components/ui/autocomplete';
+import { CustomCheckbox } from '@/components/ui/custom-checkbox';
 
 interface Client {
   id: string;
@@ -267,13 +268,13 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="billable">Billable *</Label>
-                  <Input
+                  <CustomCheckbox
                     id="billable"
-                    name="billable"
-                    type="checkbox"
-                    checked={formData.billable ? true : false}
-                    onChange={handleInputChange}
+                    label="Billable"
+                    checked={formData.billable === 'true'}
+                    onChange={(checked) => 
+                      setFormData(prev => ({ ...prev, billable: checked.toString() }))
+                    }
                   />
                 </div>
                 <div>
