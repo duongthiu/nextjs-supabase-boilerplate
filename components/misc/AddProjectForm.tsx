@@ -8,10 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createClient } from '@/utils/supabase/client';
-import { getClients, addProject, getProject, updateProject } from '@/utils/supabase/queries';
+import { getClients, addProject, getProject, updateProject, searchClients } from '@/utils/supabase/queries';
 import { SupabaseClient } from '@supabase/supabase-js';
-import  Autocomplete from '@/components/ui/autocomplete';
-import SearchableSelect from '@/components/ui/autocomplete-searchable';
+import { Autocomplete } from '@/components/ui/autocomplete';
+
+interface Client {
+  id: string;
+  name: string;
+}
 
 export default function AddProjectForm({ projectId }: { projectId: string | null }) {
   const [formData, setFormData] = useState({
@@ -28,16 +32,19 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
     note: '',
   });
   const [error, setError] = useState<string | null>(null);
-  const [clients, setClients] = useState<{ id: string; name: string; }[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [clientSearchTerm, setClientSearchTerm] = useState('');
+  const [isSearchMode, setIsSearchMode] = useState(false);
+  const [searchResults, setSearchResults] = useState<Client[]>([]);
   const router = useRouter();
   const supabase: SupabaseClient = createClient();
 
   useEffect(() => {
     const fetchClients = async () => {
       try {
-        const clients = await getClients(supabase);
-        if (clients) {
-          setClients(clients);
+        const { clients: clientsData } = await getClients(supabase);
+        if (clientsData) {
+          setClients(clientsData);
         } else {
           setError('Failed to fetch clients.');
         }
@@ -61,6 +68,17 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
     fetchClients();
     fetchProject();
   }, [projectId]);
+
+  useEffect(() => {
+    const handleSearch = async () => {
+      if (isSearchMode && clientSearchTerm.length >= 2) {
+        const results = await searchClients(supabase, clientSearchTerm);
+        setSearchResults(results || []);
+      }
+    };
+
+    handleSearch();
+  }, [clientSearchTerm, isSearchMode]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -100,19 +118,33 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
     }
   };
 
-  const ClientDropdown = () => {
-    const options = clients.map(client => ({
-      id: client.id,
-      label: client.name
-    }));
-  
+  const ClientSelector = () => {
+    if (!isSearchMode) {
+      return (
+        <Select 
+          value={formData.client_id}
+          onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value }))}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select a client" />
+          </SelectTrigger>
+          <SelectContent>
+            {clients.map((client) => (
+              <SelectItem key={client.id} value={client.id}>
+                {client.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      );
+    }
+
     return (
-      <SearchableSelect
-        options={options}
+      <Autocomplete
+        options={clients}
         value={formData.client_id}
-        onChange={(value) => setFormData(prev => ({ ...prev, client_id: value as string }))}
-        placeholder="Select a client"
-        searchPlaceholder="Search clients..."
+        onChange={(value) => setFormData(prev => ({ ...prev, client_id: value }))}
+        placeholder="Search clients..."
       />
     );
   };
@@ -149,17 +181,19 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
                     maxLength={255}
                   />
                 </div>
-                {/* <div>
-                  <Label htmlFor="client_id">Client *</Label>
-                  <Autocomplete
-                    options={clients.map(client => ({ id: client.id, name: client.name }))}
-                    formData={formData}
-                    setFormData={setFormData}
-                    fieldName="client_id"
-                  />
-                </div> */}
                 <div>
-                  <ClientDropdown />
+                  <div className="flex justify-between items-center mb-2">
+                    <Label htmlFor="client_id">Client *</Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsSearchMode(!isSearchMode)}
+                    >
+                      {isSearchMode ? 'Show All' : 'Search Mode'}
+                    </Button>
+                  </div>
+                  <ClientSelector />
                 </div>
                 <div>
                   <Label htmlFor="currency">Currency</Label>

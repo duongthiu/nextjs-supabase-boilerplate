@@ -1,80 +1,102 @@
-import React, { useState, useMemo } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+'use client';
 
-interface AutocompleteItem {
+import { useState, useRef, useEffect } from 'react';
+import { Input } from './input';
+import { cn } from '@/utils/cn';
+
+interface Option {
   id: string;
   name: string;
 }
 
 interface AutocompleteProps {
-  options?: AutocompleteItem[];
-  formData?: any;
-  setFormData: (data: any) => void;
-  onError?: (error: string) => void;
-  isLoading?: boolean;
-  fieldName?: string;
+  options: Option[];
+  value?: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  className?: string;
 }
 
-const Autocomplete = ({ 
-  options = [], 
-  formData = { selectedId: '' },
-  setFormData, 
-  onError, 
-  isLoading = false,
-  fieldName = 'selectedId'
-}: AutocompleteProps) => {
-  const [searchTerm, setSearchTerm] = useState("");
+export function Autocomplete({
+  options,
+  value,
+  onChange,
+  placeholder = "Search...",
+  className
+}: AutocompleteProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedOption, setSelectedOption] = useState<Option | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // Filter clients based on search term with null check
-  const filteredOptions = useMemo(() => {
-    if (!Array.isArray(options)) return [];
-    return options.filter(option =>
-      option?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [options, searchTerm]);
+  useEffect(() => {
+    // Find and set the selected option based on value prop
+    if (value) {
+      const option = options.find(opt => opt.id === value);
+      if (option) {
+        setSelectedOption(option);
+        setSearchTerm(option.name);
+      }
+    }
+  }, [value, options]);
 
-  const handleSelectionChange = (selectedId: string) => {
-    try {
-      setFormData((prevData: any) => ({
-        ...prevData,
-        [fieldName]: selectedId
-      }));
-    } catch (error) {
-      onError?.(error instanceof Error ? error.message : 'An error occurred');
+  useEffect(() => {
+    // Handle click outside to close dropdown
+    function handleClickOutside(event: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const filteredOptions = options.filter(option =>
+    option.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setIsOpen(true);
+    if (!e.target.value) {
+      setSelectedOption(null);
+      onChange('');
     }
   };
 
-  const selectedValue = formData[fieldName as keyof typeof formData] || "";
+  const handleOptionClick = (option: Option) => {
+    setSelectedOption(option);
+    setSearchTerm(option.name);
+    onChange(option.id);
+    setIsOpen(false);
+  };
 
   return (
-    <div className="w-full">
-      <Select 
-        value={selectedValue}
-        onValueChange={handleSelectionChange}
-      >
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Select a client" />
-        </SelectTrigger>
-        <SelectContent>
-          {filteredOptions.length > 0 ? (
-            filteredOptions.map((option) => (
-              <SelectItem
-                key={option.id}
-                value={option.id}
-                className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                {option.name}
-              </SelectItem>
-            ))
-          ) : (
-            <SelectItem value="no-results" disabled>
-              {isLoading ? "Loading clients..." : "No clients found"}
-            </SelectItem>
-          )}
-        </SelectContent>
-      </Select>
+    <div ref={wrapperRef} className={cn("relative", className)}>
+      <Input
+        type="text"
+        value={searchTerm}
+        onChange={handleInputChange}
+        onFocus={() => setIsOpen(true)}
+        placeholder={placeholder}
+      />
+      {isOpen && filteredOptions.length > 0 && (
+        <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+          {filteredOptions.map((option) => (
+            <div
+              key={option.id}
+              className={cn(
+                "px-4 py-2 cursor-pointer hover:bg-muted",
+                selectedOption?.id === option.id && "bg-muted"
+              )}
+              onClick={() => handleOptionClick(option)}
+            >
+              {option.name}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
-};
-
-export default Autocomplete;
+}

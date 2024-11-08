@@ -43,17 +43,22 @@ export const getSubscription = cache(async (supabase: SupabaseClient) => {
 
 export async function getEmployees(
   supabase: SupabaseClient,
-  page: number = 1,
-  itemsPerPage: number = DEFAULT_ITEMS_PER_PAGE
+  page?: number,
+  itemsPerPage?: number
 ) {
-  const startRow = (page - 1) * itemsPerPage;
-  
-  const { data: employees, error, count } = await supabase
+  let query = supabase
     .from('Employees')
     .select('*', { count: 'exact' })
     .eq('is_deleted', false)
-    .order('surname', { ascending: true })
-    .range(startRow, startRow + itemsPerPage - 1);
+    .order('surname', { ascending: true });
+
+  // Apply pagination only if both page and itemsPerPage are provided
+  if (page !== undefined && itemsPerPage !== undefined) {
+    const startRow = (page - 1) * itemsPerPage;
+    query = query.range(startRow, startRow + itemsPerPage - 1);
+  }
+
+  const { data: employees, error, count } = await query;
 
   if (error) {
     console.error('Error fetching employees:', error);
@@ -116,17 +121,22 @@ export async function updateEmployee(supabase: SupabaseClient, employeeData: any
 
 export async function getClients(
   supabase: SupabaseClient,
-  page: number = 1,
-  itemsPerPage: number = DEFAULT_ITEMS_PER_PAGE
+  page?: number,
+  itemsPerPage?: number
 ) {
-  const startRow = (page - 1) * itemsPerPage;
-  
-  const { data: clients, error, count } = await supabase
+  let query = supabase
     .from('Clients')
     .select('*', { count: 'exact' })
     .eq('is_deleted', false)
-    .order('name', { ascending: true })
-    .range(startRow, startRow + itemsPerPage - 1);
+    .order('name', { ascending: true });
+
+  // Apply pagination only if both page and itemsPerPage are provided
+  if (page !== undefined && itemsPerPage !== undefined) {
+    const startRow = (page - 1) * itemsPerPage;
+    query = query.range(startRow, startRow + itemsPerPage - 1);
+  }
+
+  const { data: clients, error, count } = await query;
 
   if (error) {
     console.error('Error fetching clients:', error);
@@ -184,16 +194,21 @@ export async function updateClient(supabase: SupabaseClient, clientData: any) {
 
 export async function getProjects(
   supabase: SupabaseClient,
-  page: number = 1,
-  itemsPerPage: number = DEFAULT_ITEMS_PER_PAGE
+  page?: number,
+  itemsPerPage?: number
 ) {
-  const startRow = (page - 1) * itemsPerPage;
-  
-  const { data: projects, error, count } = await supabase
+  let query = supabase
     .from('Projects')
     .select('*, Clients(name)', { count: 'exact' })
-    .range(startRow, startRow + itemsPerPage - 1)
     .order('name', { ascending: true });
+
+  // Apply pagination only if both page and itemsPerPage are provided
+  if (page !== undefined && itemsPerPage !== undefined) {
+    const startRow = (page - 1) * itemsPerPage;
+    query = query.range(startRow, startRow + itemsPerPage - 1);
+  }
+
+  const { data: projects, error, count } = await query;
 
   if (error) {
     console.error('Error fetching projects:', error);
@@ -251,4 +266,24 @@ export async function updateProject(supabase: SupabaseClient, projectData: any) 
   }
 
   return data;
+}
+
+// Add a new function specifically for searching clients
+export async function searchClients(
+  supabase: SupabaseClient,
+  searchTerm: string
+) {
+  const { data: clients, error } = await supabase
+    .from('Clients')
+    .select('*')
+    .eq('is_deleted', false)
+    .ilike('name', `%${searchTerm}%`)
+    .order('name', { ascending: true });
+
+  if (error) {
+    console.error('Error searching clients:', error);
+    return null;
+  }
+
+  return clients;
 }
