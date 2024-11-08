@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from './button';
 import { useState } from 'react';
 import { startOfMonth, endOfMonth, eachDayOfInterval, format, addMonths, subMonths } from 'date-fns';
+import { cn } from '@/utils/cn';
 
 interface AllocationData {
   id: string;
@@ -69,18 +70,23 @@ export function CalendarView({ allocations }: CalendarViewProps) {
           return (
             <div
               key={day.toISOString()}
-              className={`min-h-[100px] p-2 border ${
-                totalAllocation > 100 ? 'bg-red-50' : 
-                totalAllocation === 100 ? 'bg-green-50' : 
-                totalAllocation > 0 ? 'bg-yellow-50' : ''
-              }`}
+              className={cn(
+                "min-h-[100px] p-2 border dark:border-gray-700",
+                totalAllocation > 100 
+                  ? "bg-red-100 dark:bg-red-900/20" 
+                  : totalAllocation === 100 
+                    ? "bg-green-100 dark:bg-green-900/20" 
+                    : totalAllocation > 0 
+                      ? "bg-yellow-100 dark:bg-yellow-900/20" 
+                      : "dark:bg-gray-900/40"
+              )}
             >
               <div className="font-medium">{format(day, 'd')}</div>
               <div className="space-y-1 mt-1">
                 {dayAllocations.map(allocation => (
                   <div
                     key={allocation.id}
-                    className="text-xs p-1 bg-white rounded border truncate"
+                    className="text-xs p-1 bg-background rounded border dark:border-gray-700 truncate shadow-sm"
                     title={`${allocation.employee_name} - ${allocation.project_name} (${allocation.allocation_percentage}%)`}
                   >
                     {allocation.employee_name} ({allocation.allocation_percentage}%)
@@ -94,15 +100,15 @@ export function CalendarView({ allocations }: CalendarViewProps) {
 
       <div className="flex gap-4 text-sm">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-green-50 border"></div>
+          <div className="w-3 h-3 bg-green-100 dark:bg-green-900/20 border dark:border-gray-700"></div>
           <span>100% Allocated</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-yellow-50 border"></div>
+          <div className="w-3 h-3 bg-yellow-100 dark:bg-yellow-900/20 border dark:border-gray-700"></div>
           <span>Partially Allocated</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-red-50 border"></div>
+          <div className="w-3 h-3 bg-red-100 dark:bg-red-900/20 border dark:border-gray-700"></div>
           <span>Over Allocated</span>
         </div>
       </div>
