@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { cache } from 'react';
+import { DEFAULT_ITEMS_PER_PAGE } from '../constants';
 
 export const getUser = cache(async (supabase: SupabaseClient) => {
   const {
@@ -40,20 +41,27 @@ export const getSubscription = cache(async (supabase: SupabaseClient) => {
 //   return userDetails;
 // });
 
-export async function getEmployees(supabase: SupabaseClient) {
-  const { data: employees, error } = await supabase
+export async function getEmployees(
+  supabase: SupabaseClient,
+  page: number = 1,
+  itemsPerPage: number = DEFAULT_ITEMS_PER_PAGE
+) {
+  const startRow = (page - 1) * itemsPerPage;
+  
+  const { data: employees, error, count } = await supabase
     .from('Employees')
-    .select('*')
+    .select('*', { count: 'exact' })
     .eq('is_deleted', false)
-    .order('surname', { ascending: true });
+    .order('surname', { ascending: true })
+    .range(startRow, startRow + itemsPerPage - 1);
 
   if (error) {
     console.error('Error fetching employees:', error);
-    return null;
+    return { employees: null, count: 0 };
   }
 
-  return employees;
-};
+  return { employees, count };
+}
 
 export async function getEmployee(supabase: SupabaseClient, id: string) {
   const { data: employee, error } = await supabase
@@ -106,20 +114,27 @@ export async function updateEmployee(supabase: SupabaseClient, employeeData: any
   return data;
 }
 
-export async function getClients(supabase: SupabaseClient) {
-  const { data: clients, error } = await supabase
+export async function getClients(
+  supabase: SupabaseClient,
+  page: number = 1,
+  itemsPerPage: number = DEFAULT_ITEMS_PER_PAGE
+) {
+  const startRow = (page - 1) * itemsPerPage;
+  
+  const { data: clients, error, count } = await supabase
     .from('Clients')
-    .select('*')
+    .select('*', { count: 'exact' })
     .eq('is_deleted', false)
-    .order('name', { ascending: true });
+    .order('name', { ascending: true })
+    .range(startRow, startRow + itemsPerPage - 1);
 
   if (error) {
     console.error('Error fetching clients:', error);
-    return null;
+    return { clients: null, count: 0 };
   }
 
-  return clients;
-};
+  return { clients, count };
+}
 
 export async function getClient(supabase: SupabaseClient, id: string) {
   const { data: client, error } = await supabase
@@ -167,24 +182,31 @@ export async function updateClient(supabase: SupabaseClient, clientData: any) {
   return data;
 }
 
-export async function getProjects(supabase: SupabaseClient) {
-  const { data: projects, error } = await supabase
+export async function getProjects(
+  supabase: SupabaseClient,
+  page: number = 1,
+  itemsPerPage: number = DEFAULT_ITEMS_PER_PAGE
+) {
+  const startRow = (page - 1) * itemsPerPage;
+  
+  const { data: projects, error, count } = await supabase
     .from('Projects')
-    .select('*, Clients(name)')
+    .select('*, Clients(name)', { count: 'exact' })
+    .range(startRow, startRow + itemsPerPage - 1)
     .order('name', { ascending: true });
 
   if (error) {
     console.error('Error fetching projects:', error);
-    return null;
+    return { projects: null, count: 0 };
   }
 
-  const projectsWithClientName = projects.map((project) => ({ 
+  const projectsWithClientName = projects?.map((project) => ({ 
     ...project,
     client_name: project.Clients ? project.Clients.name : 'Unknown Client',
   }));
 
-  return projectsWithClientName;
-};
+  return { projects: projectsWithClientName, count };
+}
 
 export async function getProject(supabase: SupabaseClient, id: string) {
   const { data: project, error } = await supabase

@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { Pagination } from '@/components/ui/pagination';
+import { DEFAULT_ITEMS_PER_PAGE } from '@/utils/constants';
 
 interface ClientsPageProps {
   user: User;
@@ -17,84 +19,114 @@ interface ClientsPageProps {
 export default function ClientsPage({ user }: ClientsPageProps) {
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_ITEMS_PER_PAGE);
+  const [totalItems, setTotalItems] = useState(0);
   const router = useRouter();
   
   useEffect(() => {
-    async function loadClients() {
-      try {
-        const supabase = createClient();
-        const clientsData = await getClients(supabase);
-        if (clientsData) {
-          setClients(clientsData);
-        }
-      } catch (error) {
-        console.error('Error loading clients:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
     loadClients();
-  }, []);
+  }, [currentPage, itemsPerPage]);
+
+  async function loadClients() {
+    try {
+      setLoading(true);
+      const supabase = createClient();
+      const { clients, count } = await getClients(supabase, currentPage, itemsPerPage);
+      if (clients) {
+        setClients(clients);
+        setTotalItems(count || 0);
+      }
+    } catch (error) {
+      console.error('Error loading clients:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (items: number) => {
+    setItemsPerPage(items);
+    setCurrentPage(1);
+  };
 
   if (loading) {
     return <div>Loading...</div>;
   }
 
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
   return (
-    <div className="container mx-auto px-4">
-      <main className="flex-1 p-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Client List</CardTitle>
-            <Link href="/clients/add">
-              <Button variant="default">+ Add New</Button>
-            </Link>
-          </CardHeader>
-          <CardContent>
-            <table className="w-full">
-              <thead>
-                <tr className="text-left bg-muted">
-                  <th className="p-2">Name</th>
-                  <th className="p-2">Client Code</th>
-                  <th className="p-2">Address</th>
-                  <th className="p-2">Country</th>
-                  <th className="p-2">Active</th>
-                  <th className="p-2">Actions</th>
+    <div className="container mx-auto">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Client List</CardTitle>
+          <Link href="/clients/add">
+            <Button variant="default">+ Add New</Button>
+          </Link>
+        </CardHeader>
+        <CardContent>
+          <table className="w-full">
+            <thead>
+              <tr className="text-left bg-muted">
+                <th className="p-2">Name</th>
+                <th className="p-2">Client Code</th>
+                <th className="p-2">Address</th>
+                <th className="p-2">Country</th>
+                <th className="p-2">Active</th>
+                <th className="p-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {clients?.map((client) => (
+                <tr 
+                  key={client.id} 
+                  className="border-b hover:bg-muted/50 cursor-pointer"
+                  onClick={() => router.push(`/clients/edit/${client.id}`)}
+                >
+                  <td className="p-2">{client.name}</td>
+                  <td className="p-2">{client.client_code}</td>
+                  <td className="p-2">{client.address}</td>
+                  <td className="p-2">{client.country_code_iso_2}</td>
+                  <td className="p-2">
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded ${
+                      client.is_active 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {client.is_active ? 'Yes' : 'No'}
+                    </span>
+                  </td>
+                  <td className="p-2">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/clients/edit/${client.id}`);
+                      }}
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {clients?.map((client) => (
-                  <tr 
-                    key={client.id} 
-                    className="border-b hover:bg-muted/50 cursor-pointer"
-                    onClick={() => router.push(`/clients/edit/${client.id}`)}
-                  >
-                    <td className="p-2">{client.name}</td>
-                    <td className="p-2">{client.client_code}</td>
-                    <td className="p-2">{client.address}</td>
-                    <td className="p-2">{client.country_code_iso_2}</td>
-                    <td className="p-2">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded ${
-                        client.is_active 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {client.is_active ? 'Yes' : 'No'}
-                      </span>
-                    </td>
-                    <td className="p-2">
-                      <Button variant="ghost" size="icon">
-                        <Settings className="h-4 w-4" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </CardContent>
-        </Card>
-      </main>
+              ))}
+            </tbody>
+          </table>
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            itemsPerPage={itemsPerPage}
+            totalItems={totalItems}
+            onPageChange={handlePageChange}
+            onItemsPerPageChange={handleItemsPerPageChange}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }
