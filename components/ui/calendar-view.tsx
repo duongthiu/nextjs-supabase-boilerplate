@@ -8,6 +8,7 @@ import { cn } from '@/utils/cn';
 
 interface AllocationData {
   id: string;
+  employee_id: string;
   employee_name: string;
   project_name: string;
   start_date: string;
@@ -16,6 +17,13 @@ interface AllocationData {
 }
 
 interface CalendarViewProps {
+  allocations: AllocationData[];
+}
+
+interface EmployeeAllocation {
+  employee_id: string;
+  employee_name: string;
+  total_percentage: number;
   allocations: AllocationData[];
 }
 
@@ -30,11 +38,37 @@ export function CalendarView({ allocations }: CalendarViewProps) {
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
 
   const getAllocationsForDate = (date: Date) => {
-    return allocations.filter(allocation => {
+    // Get all allocations for this date
+    const dayAllocations = allocations.filter(allocation => {
       const startDate = new Date(allocation.start_date);
       const endDate = new Date(allocation.end_date);
       return date >= startDate && date <= endDate;
     });
+
+    // Group allocations by employee
+    const employeeAllocations = dayAllocations.reduce((acc, allocation) => {
+      const existing = acc.find(ea => ea.employee_id === allocation.employee_id);
+      if (existing) {
+        existing.total_percentage += allocation.allocation_percentage;
+        existing.allocations.push(allocation);
+      } else {
+        acc.push({
+          employee_id: allocation.employee_id,
+          employee_name: allocation.employee_name,
+          total_percentage: allocation.allocation_percentage,
+          allocations: [allocation]
+        });
+      }
+      return acc;
+    }, [] as EmployeeAllocation[]);
+
+    return employeeAllocations;
+  };
+
+  const getAllocationColor = (percentage: number) => {
+    if (percentage > 100) return "bg-red-100 dark:bg-red-900/20";
+    if (percentage === 100) return "bg-green-100 dark:bg-green-900/20";
+    return "bg-yellow-100 dark:bg-yellow-900/20";
   };
 
   return (
@@ -60,36 +94,33 @@ export function CalendarView({ allocations }: CalendarViewProps) {
           </div>
         ))}
         
-        {daysInMonth.map((day, index) => {
-          const dayAllocations = getAllocationsForDate(day);
-          const totalAllocation = dayAllocations.reduce(
-            (sum, allocation) => sum + allocation.allocation_percentage,
-            0
-          );
+        {daysInMonth.map((day) => {
+          const employeeAllocations = getAllocationsForDate(day);
 
           return (
             <div
               key={day.toISOString()}
-              className={cn(
-                "min-h-[100px] p-2 border dark:border-gray-700",
-                totalAllocation > 100 
-                  ? "bg-red-100 dark:bg-red-900/20" 
-                  : totalAllocation === 100 
-                    ? "bg-green-100 dark:bg-green-900/20" 
-                    : totalAllocation > 0 
-                      ? "bg-yellow-100 dark:bg-yellow-900/20" 
-                      : "dark:bg-gray-900/40"
-              )}
+              className="min-h-[120px] p-2 border dark:border-gray-700 bg-card"
             >
               <div className="font-medium">{format(day, 'd')}</div>
               <div className="space-y-1 mt-1">
-                {dayAllocations.map(allocation => (
+                {employeeAllocations.map((empAllocation) => (
                   <div
-                    key={allocation.id}
-                    className="text-xs p-1 bg-background rounded border dark:border-gray-700 truncate shadow-sm"
-                    title={`${allocation.employee_name} - ${allocation.project_name} (${allocation.allocation_percentage}%)`}
+                    key={empAllocation.employee_id}
+                    className={cn(
+                      "text-xs p-1 rounded border dark:border-gray-700 shadow-sm",
+                      getAllocationColor(empAllocation.total_percentage)
+                    )}
+                    title={`${empAllocation.employee_name} - Total: ${empAllocation.total_percentage}%`}
                   >
-                    {allocation.employee_name} ({allocation.allocation_percentage}%)
+                    <div className="font-medium">{empAllocation.employee_name}</div>
+                    <div className="text-muted-foreground">
+                      {empAllocation.allocations.map(a => (
+                        <div key={a.id} className="truncate">
+                          {a.project_name} ({a.allocation_percentage}%)
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>

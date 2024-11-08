@@ -25,7 +25,7 @@ export default function AllocationsPage({ user }: AllocationsPageProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_ITEMS_PER_PAGE);
   const [totalItems, setTotalItems] = useState(0);
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [viewMode, setViewMode] = useState<ViewMode>('calendar');
   const router = useRouter();
   
   useEffect(() => {
