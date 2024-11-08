@@ -287,3 +287,94 @@ export async function searchClients(
 
   return clients;
 }
+
+export async function getAllocations(
+  supabase: SupabaseClient,
+  page?: number,
+  itemsPerPage?: number
+) {
+  let query = supabase
+    .from('Allocations')
+    .select(`
+      *,
+      Employees(given_name, surname),
+      Projects(name, code)
+    `, { count: 'exact' })
+    .eq('is_deleted', false)
+    .order('start_date', { ascending: false });
+
+  if (page !== undefined && itemsPerPage !== undefined) {
+    const startRow = (page - 1) * itemsPerPage;
+    query = query.range(startRow, startRow + itemsPerPage - 1);
+  }
+
+  const { data: allocations, error, count } = await query;
+
+  if (error) {
+    console.error('Error fetching allocations:', error);
+    return { allocations: null, count: 0 };
+  }
+
+  const formattedAllocations = allocations?.map(allocation => ({
+    ...allocation,
+    employee_name: `${allocation.Employees.given_name} ${allocation.Employees.surname}`,
+    project_name: `${allocation.Projects.code} - ${allocation.Projects.name}`
+  }));
+
+  return { allocations: formattedAllocations, count };
+}
+
+export async function getAllocation(supabase: SupabaseClient, id: string) {
+  const { data: allocation, error } = await supabase
+    .from('Allocations')
+    .select(`
+      *,
+      Employees(given_name, surname),
+      Projects(name, code)
+    `)
+    .eq('id', id)
+    .eq('is_deleted', false)
+    .single();
+
+  if (error) {
+    console.error('Error fetching allocation:', error);
+    return null;
+  }
+
+  return allocation;
+}
+
+export async function addAllocation(supabase: SupabaseClient, allocationData: any) {
+  const { data, error } = await supabase
+    .from('Allocations')
+    .insert([{
+      ...allocationData,
+      is_deleted: false
+    }])
+    .select();
+
+  if (error) {
+    console.error('Error adding allocation:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function updateAllocation(supabase: SupabaseClient, allocationData: any) {
+  const { data, error } = await supabase
+    .from('Allocations')
+    .update([{
+      ...allocationData,
+      updated_at: new Date().toISOString()
+    }])
+    .eq('id', allocationData.id)
+    .select();
+
+  if (error) {
+    console.error('Error updating allocation:', error);
+    throw error;
+  }
+
+  return data;
+}

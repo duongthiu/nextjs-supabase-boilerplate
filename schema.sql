@@ -60,3 +60,23 @@ create table
   ) tablespace pg_default;
 
 create unique index if not exists idx_code on public."Projects" using btree (code) tablespace pg_default;
+
+create table
+  public."Allocations" (
+    id uuid not null default gen_random_uuid (),
+    employee_id uuid not null,
+    project_id uuid not null,
+    start_date date not null,
+    end_date date not null,
+    allocation_percentage numeric(5,2) not null check (allocation_percentage > 0 and allocation_percentage <= 100),
+    created_at timestamp with time zone not null default now(),
+    updated_at timestamp with time zone not null default now(),
+    is_deleted boolean not null default false,
+    constraint Allocations_pkey primary key (id),
+    constraint employee_fk foreign key (employee_id) references "Employees" (id) on delete cascade,
+    constraint project_fk foreign key (project_id) references "Projects" (id) on delete cascade
+  ) tablespace pg_default;
+
+-- Create index for common lookup patterns
+create index idx_employee_allocation on public."Allocations" using btree (employee_id, start_date, end_date) tablespace pg_default;
+create index idx_project_allocation on public."Allocations" using btree (project_id, start_date, end_date) tablespace pg_default;
