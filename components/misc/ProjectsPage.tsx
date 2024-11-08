@@ -77,7 +77,7 @@ export default function ProjectsPage({ user }: ProjectsPageProps) {
                 <th className="p-2">Client</th>
                 <th className="p-2">Start Date</th>
                 <th className="p-2">End Date</th>
-                <th className="p-2">Status</th>
+                <th className="p-2">Deal Status</th>
                 <th className="p-2">Actions</th>
               </tr>
             </thead>
@@ -94,8 +94,8 @@ export default function ProjectsPage({ user }: ProjectsPageProps) {
                   <td className="p-2">{new Date(project.start_date).toLocaleDateString()}</td>
                   <td className="p-2">{project.end_date ? new Date(project.end_date).toLocaleDateString() : '-'}</td>
                   <td className="p-2">
-                    <span className={`bg-${project.status === 'active' ? 'green' : 'yellow'}-100 text-${project.status === 'active' ? 'green' : 'yellow'}-800 text-xs font-medium px-2 py-1 rounded`}>
-                      {project.status}
+                    <span className={`bg-${project.deal_status === 'WON' ? 'green' : 'yellow'}-100 text-${project.deal_status === 'WON' ? 'green' : 'yellow'}-800 text-xs font-medium px-2 py-1 rounded`}>
+                      {project.deal_status}
                     </span>
                   </td>
                   <td className="p-2">

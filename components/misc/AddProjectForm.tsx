@@ -13,73 +13,82 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { Autocomplete } from '@/components/ui/autocomplete';
 import { CustomCheckbox } from '@/components/ui/custom-checkbox';
 
+interface FormData {
+  code: string;
+  name: string;
+  client_id: string;
+  currency: string;
+  contract_owner: string;
+  start_date: string;
+  end_date: string;
+  deal_status: string;
+  billable: string;
+  engagement_manager_email: string;
+  note: string;
+}
+
+const initialFormData: FormData = {
+  code: '',
+  name: '',
+  client_id: '',
+  currency: '',
+  contract_owner: '',
+  start_date: '',
+  end_date: '',
+  deal_status: 'PENDING',
+  billable: 'false',
+  engagement_manager_email: '',
+  note: '',
+};
+
 interface Client {
   id: string;
   name: string;
 }
 
 export default function AddProjectForm({ projectId }: { projectId: string | null }) {
-  const [formData, setFormData] = useState({
-    code: '',
-    name: '',
-    client_id: '',
-    currency: '',
-    contract_owner: '',
-    start_date: '',
-    end_date: '',
-    deal_status: '',
-    billable: 'false',
-    engagement_manager_email: '',
-    note: '',
-  });
+  const [formData, setFormData] = useState<FormData>(initialFormData);
   const [error, setError] = useState<string | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
-  const [clientSearchTerm, setClientSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
   const [isSearchMode, setIsSearchMode] = useState(false);
-  const [searchResults, setSearchResults] = useState<Client[]>([]);
   const router = useRouter();
   const supabase: SupabaseClient = createClient();
 
   useEffect(() => {
-    const fetchClients = async () => {
+    const fetchData = async () => {
       try {
+        setLoading(true);
+        // Fetch clients
         const { clients: clientsData } = await getClients(supabase);
         if (clientsData) {
           setClients(clientsData);
-        } else {
-          setError('Failed to fetch clients.');
+        }
+
+        // Fetch project if editing
+        if (projectId) {
+          const project = await getProject(supabase, projectId);
+          if (project) {
+            setFormData({
+              ...initialFormData,
+              ...project,
+              start_date: project.start_date ? project.start_date.split('T')[0] : '',
+              end_date: project.end_date ? project.end_date.split('T')[0] : '',
+              billable: project.billable?.toString() || 'false',
+              deal_status: project.deal_status || 'PENDING',
+            });
+          }
         }
       } catch (error) {
-        setError('Failed to fetch clients.');
+        console.error('Error fetching data:', error);
+        setError('Failed to load data');
+      } finally {
+        setLoading(false);
       }
     };
 
-    const fetchProject = async () => {
-      if (projectId) {
-        const project = await getProject(supabase, projectId);
-        console.log('Project:', project);
-        if (project) {
-          setFormData(project);
-        } else {
-          setError('Failed to fetch project.');
-        }
-      }
-    };
-
-    fetchClients();
-    fetchProject();
+    fetchData();
   }, [projectId]);
-
-  useEffect(() => {
-    const handleSearch = async () => {
-      if (isSearchMode && clientSearchTerm.length >= 2) {
-        const results = await searchClients(supabase, clientSearchTerm);
-        setSearchResults(results || []);
-      }
-    };
-
-    handleSearch();
-  }, [clientSearchTerm, isSearchMode]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -150,6 +159,10 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
     );
   };
 
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className="container mx-auto">
       <main className="flex-1 p-8">
@@ -165,7 +178,7 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
                   <Input
                     id="code"
                     name="code"
-                    value={formData.code}
+                    value={formData.code || ''}
                     onChange={handleInputChange}
                     required
                     maxLength={50}
@@ -176,7 +189,7 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
                   <Input
                     id="name"
                     name="name"
-                    value={formData.name}
+                    value={formData.name || ''}
                     onChange={handleInputChange}
                     required
                     maxLength={255}
@@ -201,7 +214,7 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
                   <Input
                     id="currency"
                     name="currency"
-                    value={formData.currency}
+                    value={formData.currency || ''}
                     onChange={handleInputChange}
                     maxLength={6}
                   />
@@ -211,7 +224,7 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
                   <Input
                     id="contract_owner"
                     name="contract_owner"
-                    value={formData.contract_owner}
+                    value={formData.contract_owner || ''}
                     onChange={handleInputChange}
                     required
                     maxLength={50}
@@ -223,7 +236,7 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
                     id="engagement_manager_email"
                     name="engagement_manager_email"
                     type="email"
-                    value={formData.engagement_manager_email}
+                    value={formData.engagement_manager_email || ''}
                     onChange={handleInputChange}
                     required
                     maxLength={255}
@@ -235,7 +248,7 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
                     id="start_date"
                     name="start_date"
                     type="date"
-                    value={formData.start_date}
+                    value={formData.start_date || ''}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -245,7 +258,7 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
                     id="end_date"
                     name="end_date"
                     type="date"
-                    value={formData.end_date}
+                    value={formData.end_date || ''}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -254,8 +267,8 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
                   <Select 
                     name="deal_status" 
                     onValueChange={(value) => handleSelectChange('deal_status', value)} 
+                    value={formData.deal_status || 'PENDING'}
                     required 
-                    value={formData.deal_status}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select deal status" />
@@ -282,7 +295,7 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
                   <Input
                     id="note"
                     name="note"
-                    value={formData.note}
+                    value={formData.note || ''}
                     onChange={handleInputChange}
                   />
                 </div>
