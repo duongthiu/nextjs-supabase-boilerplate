@@ -5,6 +5,7 @@ import { Button } from './button';
 import { useState } from 'react';
 import { startOfMonth, endOfMonth, eachDayOfInterval, format, addMonths, subMonths } from 'date-fns';
 import { cn } from '@/utils/cn';
+import { CALENDAR_SINGLE_ROW_LIMIT, CALENDAR_DOUBLE_ROW_LIMIT } from '@/utils/constants';
 
 interface AllocationData {
   id: string;
@@ -38,14 +39,12 @@ export function CalendarView({ allocations }: CalendarViewProps) {
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
 
   const getAllocationsForDate = (date: Date) => {
-    // Get all allocations for this date
     const dayAllocations = allocations.filter(allocation => {
       const startDate = new Date(allocation.start_date);
       const endDate = new Date(allocation.end_date);
       return date >= startDate && date <= endDate;
     });
 
-    // Group allocations by employee
     const employeeAllocations = dayAllocations.reduce((acc, allocation) => {
       const existing = acc.find(ea => ea.employee_id === allocation.employee_id);
       if (existing) {
@@ -69,6 +68,82 @@ export function CalendarView({ allocations }: CalendarViewProps) {
     if (percentage > 100) return "bg-red-100 dark:bg-red-900/20";
     if (percentage === 100) return "bg-green-100 dark:bg-green-900/20";
     return "bg-yellow-100 dark:bg-yellow-900/20";
+  };
+
+  const getInitials = (name: string) => {
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  const renderAllocationContent = (employeeAllocations: EmployeeAllocation[]) => {
+    if (employeeAllocations.length <= CALENDAR_SINGLE_ROW_LIMIT) {
+      // Single allocation per row
+      return (
+        <div className="space-y-1">
+          {employeeAllocations.map((empAllocation) => (
+            <div
+              key={empAllocation.employee_id}
+              className={cn(
+                "text-xs p-1 rounded border dark:border-gray-700 shadow-sm",
+                getAllocationColor(empAllocation.total_percentage)
+              )}
+              title={`${empAllocation.employee_name} - Total: ${empAllocation.total_percentage}%`}
+            >
+              <div className="font-medium">{empAllocation.employee_name}</div>
+              <div className="text-muted-foreground">
+                {empAllocation.allocations.map(a => (
+                  <div key={a.id} className="truncate">
+                    {a.project_name} ({a.allocation_percentage}%)
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    } else if (employeeAllocations.length <= CALENDAR_DOUBLE_ROW_LIMIT) {
+      // Two allocations per row
+      return (
+        <div className="grid grid-cols-2 gap-1">
+          {employeeAllocations.map((empAllocation) => (
+            <div
+              key={empAllocation.employee_id}
+              className={cn(
+                "text-xs p-1 rounded border dark:border-gray-700 shadow-sm",
+                getAllocationColor(empAllocation.total_percentage)
+              )}
+              title={`${empAllocation.employee_name} - Total: ${empAllocation.total_percentage}%`}
+            >
+              <div className="font-medium truncate">{empAllocation.employee_name}</div>
+              <div className="text-muted-foreground truncate">
+                {empAllocation.total_percentage}%
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    } else {
+      // Circle initials for many allocations
+      return (
+        <div className="flex flex-wrap gap-1">
+          {employeeAllocations.map((empAllocation) => (
+            <div
+              key={empAllocation.employee_id}
+              className={cn(
+                "w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium",
+                getAllocationColor(empAllocation.total_percentage)
+              )}
+              title={`${empAllocation.employee_name} - Total: ${empAllocation.total_percentage}%`}
+            >
+              {getInitials(empAllocation.employee_name)}
+            </div>
+          ))}
+        </div>
+      );
+    }
   };
 
   return (
@@ -102,28 +177,8 @@ export function CalendarView({ allocations }: CalendarViewProps) {
               key={day.toISOString()}
               className="min-h-[120px] p-2 border dark:border-gray-700 bg-card"
             >
-              <div className="font-medium">{format(day, 'd')}</div>
-              <div className="space-y-1 mt-1">
-                {employeeAllocations.map((empAllocation) => (
-                  <div
-                    key={empAllocation.employee_id}
-                    className={cn(
-                      "text-xs p-1 rounded border dark:border-gray-700 shadow-sm",
-                      getAllocationColor(empAllocation.total_percentage)
-                    )}
-                    title={`${empAllocation.employee_name} - Total: ${empAllocation.total_percentage}%`}
-                  >
-                    <div className="font-medium">{empAllocation.employee_name}</div>
-                    <div className="text-muted-foreground">
-                      {empAllocation.allocations.map(a => (
-                        <div key={a.id} className="truncate">
-                          {a.project_name} ({a.allocation_percentage}%)
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <div className="font-medium mb-1">{format(day, 'd')}</div>
+              {renderAllocationContent(employeeAllocations)}
             </div>
           );
         })}
