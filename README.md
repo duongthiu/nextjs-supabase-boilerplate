@@ -5,6 +5,7 @@ Thanks for checking out this repository! This project is a fork from the origina
 ## Purpose
 
 This Next.js Supabase boilerplate provides a solid foundation for building scalable web applications.
+Demo: [https://nextjs-supabase-boilerplate-gamma.vercel.app/landing](https://nextjs-supabase-boilerplate-gamma.vercel.app/landing)
 
 ## Tech Stack
 
