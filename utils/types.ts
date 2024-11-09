@@ -85,3 +85,16 @@ export type UserTenant = {
   updated_at: string;
   tenant?: Tenant;
 }
+
+export type Department = {
+  id: string;
+  name: string;
+  parent_department_id?: string | null;
+  tenant_id: string;
+  created_at: string;
+  updated_at: string;
+  is_active: boolean;
+  is_deleted: boolean;
+  parent_department?: Department;
+  child_departments?: Department[];
+}

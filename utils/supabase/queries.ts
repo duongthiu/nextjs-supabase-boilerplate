@@ -384,3 +384,90 @@ export async function getUserTenants(supabase: SupabaseClient, userId: string) {
 
   return userTenants;
 }
+
+export async function getDepartments(
+  supabase: SupabaseClient,
+  tenantId: string,
+  page?: number,
+  itemsPerPage?: number
+) {
+  let query = supabase
+    .from('Departments')
+    .select(`
+      *,
+      parent_department:parent_department_id(*)
+    `, { count: 'exact' })
+    .eq('is_deleted', false)
+    .eq('tenant_id', tenantId)
+    .order('name', { ascending: true });
+
+  if (page !== undefined && itemsPerPage !== undefined) {
+    const startRow = (page - 1) * itemsPerPage;
+    query = query.range(startRow, startRow + itemsPerPage - 1);
+  }
+
+  const { data: departments, error, count } = await query;
+
+  if (error) {
+    console.error('Error fetching departments:', error);
+    return { departments: null, count: 0 };
+  }
+
+  return { departments, count };
+}
+
+export async function getDepartment(supabase: SupabaseClient, id: string) {
+  const { data: department, error } = await supabase
+    .from('Departments')
+    .select(`
+      *,
+      parent_department:parent_department_id(*)
+    `)
+    .eq('id', id)
+    .eq('is_deleted', false)
+    .single();
+
+  if (error) {
+    console.error('Error fetching department:', error);
+    return null;
+  }
+
+  return department;
+}
+
+export async function addDepartment(supabase: SupabaseClient, departmentData: any) {
+  const { data, error } = await supabase
+    .from('Departments')
+    .insert([{
+      ...departmentData,
+      is_deleted: false
+    }])
+    .select();
+
+  if (error) {
+    console.error('Error adding department:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function updateDepartment(supabase: SupabaseClient, departmentData: any) {
+  const { id, parent_department, ...updateData } = departmentData;
+  
+  const { data, error } = await supabase
+    .from('Departments')
+    .update({
+      ...updateData,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', id)
+    .select();
+
+  if (error) {
+    console.error('Error updating department:', error);
+    throw error;
+  }
+
+  return data;
+}

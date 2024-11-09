@@ -1,7 +1,7 @@
 'use client'
 
 import { Button } from "@/components/ui/button";
-import { Users, Briefcase, X, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { Users, Briefcase, X, ChevronLeft, ChevronRight, Calendar, FolderTree } from "lucide-react";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Logo } from './Logo';
@@ -63,6 +63,16 @@ export function Sidebar({ onClose }: SidebarProps) {
             >
               <Users className="h-4 w-4" />
               {isExpanded && <span className="ml-2">Employees</span>}
+            </Button>
+          </Link>
+          <Link href="/departments">
+            <Button 
+              variant={pathname.startsWith('/departments') ? "secondary" : "ghost"} 
+              className={`w-full justify-start ${!isExpanded && 'justify-center'}`}
+              title="Departments"
+            >
+              <FolderTree className="h-4 w-4" />
+              {isExpanded && <span className="ml-2">Departments</span>}
             </Button>
           </Link>
           <Link href="/clients">

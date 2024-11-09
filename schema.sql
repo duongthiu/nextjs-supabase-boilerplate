@@ -126,3 +126,37 @@ CREATE TABLE public."UserTenants" (
     CONSTRAINT UserTenants_pkey PRIMARY KEY (id),
     CONSTRAINT unique_user_tenant UNIQUE (user_id, tenant_id)
 ) TABLESPACE pg_default;
+
+create table
+  public."Departments" (
+    id uuid not null default gen_random_uuid (),
+    name character varying(255) not null,
+    parent_department_id uuid null,
+    tenant_id uuid not null,
+    created_at timestamp with time zone not null default now(),
+    updated_at timestamp with time zone not null default now(),
+    is_active boolean not null default true,
+    is_deleted boolean not null default false,
+    constraint departments_pkey primary key (id),
+    constraint unique_department_name_per_tenant unique (name, tenant_id),
+    constraint departments_tenant_id_fkey foreign key (tenant_id) references "Tenants" (id) on delete cascade,
+    constraint departments_parent_department_id_fkey foreign key (parent_department_id) references "Departments" (id) on delete cascade
+  ) tablespace pg_default;
+
+create table
+  public."EmployeeDepartments" (
+    employee_id uuid not null,
+    department_id uuid not null,
+    assigned_at timestamp with time zone not null default now(),
+    constraint employee_departments_pkey primary key (employee_id, department_id),
+    constraint employee_departments_employee_id_fkey foreign key (employee_id) references "Employees" (id) on delete cascade,
+    constraint employee_departments_department_id_fkey foreign key (department_id) references "Departments" (id) on delete cascade
+  ) tablespace pg_default;
+
+create index if not exists "Departments_tenant_id_idx" on public."Departments" using btree (tenant_id) tablespace pg_default;
+
+create index if not exists "Departments_parent_department_id_idx" on public."Departments" using btree (parent_department_id) tablespace pg_default;
+
+create index if not exists "EmployeeDepartments_employee_id_idx" on public."EmployeeDepartments" using btree (employee_id) tablespace pg_default;
+
+create index if not exists "EmployeeDepartments_department_id_idx" on public."EmployeeDepartments" using btree (department_id) tablespace pg_default;

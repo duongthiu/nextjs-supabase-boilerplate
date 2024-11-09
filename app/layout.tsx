@@ -7,7 +7,6 @@ import { ThemeProvider } from '@/components/landing/theme-provider';
 import { TenantProvider } from '@/utils/tenant-context';
 import dynamic from 'next/dynamic';
 import { Toaster } from '@/components/ui/toaster';
-import { Navbar } from '@/components/layout/Navbar';
 
 const PostHogPageView = dynamic(() => import('./PostHogPageView'), {
   ssr: false
@@ -55,23 +54,25 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RootLayout({ children }: PropsWithChildren) {
   return (
-    <html lang="en">
-      <ThemeProvider>
-        <PHProvider>
-          <TenantProvider>
-            <body>
+    <html lang="en" suppressHydrationWarning>
+      <body>
+        <ThemeProvider
+          defaultTheme="system"
+        >
+          <PHProvider>
+            <TenantProvider>
               <PostHogPageView />
-            <main
-              id="skip"
-              className="min-h-[calc(100dvh-4rem)] md:min-h[calc(100dvh-5rem)]"
-            >
-              {children}
-            </main>
+              <main
+                id="skip"
+                className="min-h-[calc(100dvh-4rem)] md:min-h[calc(100dvh-5rem)]"
+              >
+                {children}
+              </main>
               <Toaster />
-            </body>
-          </TenantProvider>
-        </PHProvider>
-      </ThemeProvider>
+            </TenantProvider>
+          </PHProvider>
+        </ThemeProvider>
+      </body>
     </html>
   );
 }
