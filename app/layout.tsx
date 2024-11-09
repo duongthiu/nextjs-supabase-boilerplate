@@ -4,6 +4,7 @@ import { getURL } from '@/utils/helpers';
 import '@/styles/main.css';
 import { PHProvider } from './providers';
 import { ThemeProvider } from '@/components/landing/theme-provider';
+import { TenantProvider } from '@/utils/tenant-context';
 import dynamic from 'next/dynamic';
 import { Toaster } from '@/components/ui/toaster';
 import { Navbar } from '@/components/layout/Navbar';
@@ -57,16 +58,18 @@ export default async function RootLayout({ children }: PropsWithChildren) {
     <html lang="en">
       <ThemeProvider>
         <PHProvider>
-          <body>
-            <PostHogPageView />
+          <TenantProvider>
+            <body>
+              <PostHogPageView />
             <main
               id="skip"
               className="min-h-[calc(100dvh-4rem)] md:min-h[calc(100dvh-5rem)]"
             >
               {children}
             </main>
-            <Toaster />
-          </body>
+              <Toaster />
+            </body>
+          </TenantProvider>
         </PHProvider>
       </ThemeProvider>
     </html>

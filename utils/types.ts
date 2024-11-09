@@ -31,6 +31,7 @@ export type Employee = {
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
+  tenant_id: string;
 }
 
 export type Client = {
@@ -44,6 +45,7 @@ export type Client = {
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
+  tenant_id: string;
 }
 
 export type Project = {
@@ -61,4 +63,25 @@ export type Project = {
   note?: string;
   created_at: string;
   updated_at: string;
+  tenant_id: string;
+}
+
+export type Tenant = {
+  id: string;
+  name: string;
+  subdomain: string;
+  plan: string;
+  created_at: string;
+  updated_at: string;
+  is_active: boolean;
+  is_deleted: boolean;
+}
+
+export type UserTenant = {
+  id: string;
+  user_id: string;
+  tenant_id: string;
+  created_at: string;
+  updated_at: string;
+  tenant?: Tenant;
 }

@@ -12,6 +12,7 @@ import { getClients, addProject, getProject, updateProject, searchClients } from
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Autocomplete } from '@/components/ui/autocomplete';
 import { CustomCheckbox } from '@/components/ui/custom-checkbox';
+import { useTenant } from '@/utils/tenant-context';
 
 interface FormData {
   code: string;
@@ -54,13 +55,18 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
   const [isSearchMode, setIsSearchMode] = useState(false);
   const router = useRouter();
   const supabase: SupabaseClient = createClient();
+  const { currentTenant } = useTenant();
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!currentTenant) {
+        return;
+      }
+
       try {
         setLoading(true);
         // Fetch clients
-        const { clients: clientsData } = await getClients(supabase);
+        const { clients: clientsData } = await getClients(supabase, currentTenant!.id);
         if (clientsData) {
           setClients(clientsData);
         }
@@ -88,7 +94,7 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
     };
 
     fetchData();
-  }, [projectId]);
+  }, [projectId, currentTenant]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -110,17 +116,30 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
     e.preventDefault();
     setError(null);
 
+    if (!currentTenant) {
+      setError('No tenant selected. Please select a tenant from account settings.');
+      return;
+    }
+
     if (!formData.code || !formData.name || !formData.client_id || !formData.contract_owner || !formData.engagement_manager_email) {
       setError('Please fill in all required fields.');
       return;
     }
 
     try {
+      let data;
+      const projectData = {
+        ...formData,
+        tenant_id: currentTenant.id
+      };
+
       if (projectId) {
-        await updateProject(supabase, { id: projectId, ...formData });
+        data = await updateProject(supabase, { id: projectId, ...projectData });
       } else {
-        await addProject(supabase, formData);
+        data = await addProject(supabase, projectData);
       }
+
+      console.log('Project added/updated successfully:', data);
       router.push('/projects');
     } catch (error: any) {
       setError(error.message || 'Failed to add project.');

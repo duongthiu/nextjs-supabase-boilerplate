@@ -8,6 +8,7 @@ import { User } from '@supabase/supabase-js';
 import { createApiClient } from '@/utils/supabase/api';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
+import { useTenant } from '@/utils/tenant-context';
 
 interface NavbarProps {
   user: User | null;
@@ -17,6 +18,7 @@ interface NavbarProps {
 export function Navbar({ user, onMenuClick }: NavbarProps) {
   const router = useRouter();
   const api = createApiClient(createClient());
+  const { currentTenant } = useTenant();
   
   const handleAuth = async () => {
     if (user) {
@@ -39,6 +41,11 @@ export function Navbar({ user, onMenuClick }: NavbarProps) {
         </Button>
 
         <div className="flex gap-2 items-center">
+          {currentTenant && (
+            <span className="text-sm font-medium">
+              {currentTenant.name}
+            </span>
+          )}
           <Button
             onClick={handleAuth}
             className="border"

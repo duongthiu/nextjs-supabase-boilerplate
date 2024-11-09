@@ -10,18 +10,8 @@ import { createClient } from '@/utils/supabase/client';
 import { addAllocation, updateAllocation, getAllocation, getEmployees, getProjects } from '@/utils/supabase/queries';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Autocomplete } from '@/components/ui/autocomplete';
-
-interface Employee {
-  id: string;
-  given_name: string;
-  surname: string;
-}
-
-interface Project {
-  id: string;
-  code: string;
-  name: string;
-}
+import { useTenant } from '@/utils/tenant-context';
+import { toast } from '@/components/ui/use-toast';
 
 interface FormattedOption {
   id: string;
@@ -42,12 +32,17 @@ export default function AddAllocationForm({ allocationId }: { allocationId: stri
   const [projects, setProjects] = useState<FormattedOption[]>([]);
   const router = useRouter();
   const supabase: SupabaseClient = createClient();
+  const { currentTenant } = useTenant();
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!currentTenant) {
+        return;
+      }
+
       try {
         // Fetch employees
-        const { employees: employeesData } = await getEmployees(supabase);
+        const { employees: employeesData } = await getEmployees(supabase, currentTenant.id);
         if (employeesData) {
           const formattedEmployees: FormattedOption[] = employeesData.map(emp => ({
             id: emp.id,
@@ -57,7 +52,7 @@ export default function AddAllocationForm({ allocationId }: { allocationId: stri
         }
 
         // Fetch projects
-        const { projects: projectsData } = await getProjects(supabase);
+        const { projects: projectsData } = await getProjects(supabase, currentTenant.id);
         if (projectsData) {
           const formattedProjects: FormattedOption[] = projectsData.map(proj => ({
             id: proj.id,
@@ -69,13 +64,20 @@ export default function AddAllocationForm({ allocationId }: { allocationId: stri
         // Fetch allocation if editing
         if (allocationId) {
           const allocation = await getAllocation(supabase, allocationId);
-          if (allocation) {
+          if (allocation && allocation.tenant_id === currentTenant.id) {
             setFormData({
               ...allocation,
               start_date: allocation.start_date.split('T')[0],
               end_date: allocation.end_date.split('T')[0],
               allocation_percentage: allocation.allocation_percentage.toString(),
             });
+          } else {
+            toast({
+              title: "Error",
+              description: "Allocation not found or belongs to different tenant.",
+              variant: "destructive",
+            });
+            router.push('/allocations');
           }
         }
       } catch (error) {
@@ -85,7 +87,7 @@ export default function AddAllocationForm({ allocationId }: { allocationId: stri
     };
 
     fetchData();
-  }, [allocationId]);
+  }, [allocationId, currentTenant]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -99,6 +101,11 @@ export default function AddAllocationForm({ allocationId }: { allocationId: stri
     e.preventDefault();
     setError(null);
 
+    if (!currentTenant) {
+      setError('No tenant selected. Please select a tenant from account settings.');
+      return;
+    }
+
     if (!formData.employee_id || !formData.project_id || !formData.start_date || !formData.end_date || !formData.allocation_percentage) {
       setError('Please fill in all required fields.');
       return;
@@ -111,10 +118,15 @@ export default function AddAllocationForm({ allocationId }: { allocationId: stri
     }
 
     try {
+      const allocationData = {
+        ...formData,
+        tenant_id: currentTenant.id
+      };
+
       if (allocationId) {
-        await updateAllocation(supabase, { id: allocationId, ...formData });
+        await updateAllocation(supabase, { id: allocationId, ...allocationData });
       } else {
-        await addAllocation(supabase, formData);
+        await addAllocation(supabase, allocationData);
       }
       router.push('/allocations');
     } catch (error: any) {
@@ -122,6 +134,23 @@ export default function AddAllocationForm({ allocationId }: { allocationId: stri
       console.error('Error saving allocation:', error);
     }
   };
+
+  if (!currentTenant) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <h2 className="text-lg font-semibold">No Tenant Selected</h2>
+          <p className="text-muted-foreground">Please select a tenant from your account settings.</p>
+          <Button 
+            className="mt-4"
+            onClick={() => router.push('/account')}
+          >
+            Go to Account Settings
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto">

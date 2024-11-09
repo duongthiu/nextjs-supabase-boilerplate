@@ -13,10 +13,14 @@ import { Input } from '@/components/ui/input';
 import { Logo } from '@/components/layout/Logo';
 import { User } from '@supabase/supabase-js';
 import { createClient } from '@/utils/supabase/client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { useRouter } from 'next/navigation';
 import { createApiClient } from '@/utils/supabase/api';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useTenant } from '@/utils/tenant-context';
+import { getUserTenants } from '@/utils/supabase/queries';
+import { Tenant } from '@/utils/types';
 
 export default function AccountPage({
   user
@@ -27,16 +31,78 @@ export default function AccountPage({
   const { toast } = useToast();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const { currentTenant, setCurrentTenant, userTenants, setUserTenants } = useTenant();
+
+  useEffect(() => {
+    const loadTenants = async () => {
+      if (!user.id || loading) return;
+      
+      try {
+        setLoading(true);
+        const tenants = await getUserTenants(supabase, user.id);
+        
+        if (tenants && tenants.length > 0) {
+          const formattedTenants = tenants.map(ut => ut.tenant! as Tenant);
+          setUserTenants(formattedTenants);
+
+          // If no current tenant is selected, set the first one
+          if (!currentTenant && formattedTenants.length > 0) {
+            setCurrentTenant(formattedTenants[0]);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading tenants:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load tenants. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTenants();
+  }, [user.id, setUserTenants, setCurrentTenant]);
+
+  const handleTenantChange = (tenantId: string) => {
+    const selectedTenant = userTenants.find(t => t.id === tenantId);
+    
+    if (selectedTenant) {
+      setCurrentTenant(selectedTenant);
+      toast({
+        title: "Tenant Changed",
+        description: `Now working with ${selectedTenant.name}`,
+      });
+    }
+  };
 
   const handleSignOut = async () => {
     setLoading(true);
-    const api = createApiClient(supabase);
-    await api.signOut();
-    toast({
-      title: 'Signed out successfully!'
-    });
-    router.push('/');
-    router.refresh();
+    try {
+      const api = createApiClient(supabase);
+      await api.signOut();
+      
+      setCurrentTenant(null);
+      setUserTenants([]);
+      localStorage.removeItem('currentTenant');
+      localStorage.removeItem('userTenants');
+      
+      toast({
+        title: 'Signed out successfully!'
+      });
+      router.push('/');
+      router.refresh();
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast({
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -81,6 +147,35 @@ export default function AccountPage({
                 <form>
                   <Input placeholder="Email" value={user.email} disabled />
                 </form>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Current Tenant</CardTitle>
+                <CardDescription>
+                  Select the tenant you want to work with
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div>Loading tenants...</div>
+                ) : (
+                  <Select 
+                    value={currentTenant?.id} 
+                    onValueChange={handleTenantChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a tenant" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {userTenants.map((tenant) => (
+                        <SelectItem key={tenant.id} value={tenant.id}>
+                          {tenant.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </CardContent>
             </Card>
           </div>

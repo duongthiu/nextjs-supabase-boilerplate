@@ -12,6 +12,8 @@ import { useRouter } from 'next/navigation';
 import { Pagination } from '@/components/ui/pagination';
 import { DEFAULT_ITEMS_PER_PAGE } from '@/utils/constants';
 import { CalendarView } from '@/components/ui/calendar-view';
+import { useTenant } from '@/utils/tenant-context';
+import { toast } from '@/components/ui/use-toast';
 
 interface AllocationsPageProps {
   user: User;
@@ -27,10 +29,13 @@ export default function AllocationsPage({ user }: AllocationsPageProps) {
   const [totalItems, setTotalItems] = useState(0);
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
   const router = useRouter();
+  const { currentTenant } = useTenant();
   
   useEffect(() => {
-    loadAllocations();
-  }, [currentPage, itemsPerPage]);
+    if (currentTenant) {
+      loadAllocations();
+    }
+  }, [currentPage, itemsPerPage, currentTenant]);
 
   async function loadAllocations() {
     try {
@@ -39,6 +44,7 @@ export default function AllocationsPage({ user }: AllocationsPageProps) {
       // For calendar view, we don't need pagination
       const { allocations: allocationData, count } = await getAllocations(
         supabase,
+        currentTenant!.id,
         viewMode === 'list' ? currentPage : undefined,
         viewMode === 'list' ? itemsPerPage : undefined
       );
@@ -48,9 +54,31 @@ export default function AllocationsPage({ user }: AllocationsPageProps) {
       }
     } catch (error) {
       console.error('Error loading allocations:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load allocations. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
+  }
+
+  if (!currentTenant) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <h2 className="text-lg font-semibold">No Tenant Selected</h2>
+          <p className="text-muted-foreground">Please select a tenant from your account settings.</p>
+          <Button 
+            className="mt-4"
+            onClick={() => router.push('/account')}
+          >
+            Go to Account Settings
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   const handlePageChange = (page: number) => {

@@ -12,6 +12,8 @@ import { useEffect } from 'react';
 import { Employee } from '@/utils/types';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { CustomCheckbox } from '@/components/ui/custom-checkbox';
+import { useTenant } from '@/utils/tenant-context';
+import { toast } from '@/components/ui/use-toast';
 
 export default function AddEmployeeForm({ employeeId }: { employeeId: string | null }) {
   const [formData, setFormData] = useState<Employee | {}>({
@@ -30,18 +32,32 @@ export default function AddEmployeeForm({ employeeId }: { employeeId: string | n
 });
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { currentTenant } = useTenant();
 
   useEffect(() => {
     const fetchEmployee = async () => {
+      if (!currentTenant) {
+        return;
+      }
+
       if (employeeId) {
         const supabase: SupabaseClient = createClient();
         const employee = await getEmployee(supabase, employeeId);
-        setFormData(employee);
+        if (employee && employee.tenant_id === currentTenant.id) {
+          setFormData(employee);
+        } else {
+          toast({
+            title: "Error",
+            description: "Employee not found or belongs to different tenant.",
+            variant: "destructive",
+          });
+          router.push('/employees');
+        }
       }
     };
 
     fetchEmployee();
-  }, [employeeId]);  
+  }, [employeeId, currentTenant]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -55,6 +71,11 @@ export default function AddEmployeeForm({ employeeId }: { employeeId: string | n
     e.preventDefault();
     setError(null);
 
+    if (!currentTenant) {
+      setError('No tenant selected. Please select a tenant from account settings.');
+      return;
+    }
+
     if (!(formData as Employee).given_name || !(formData as Employee).company_email || !(formData as Employee).personal_email) {
       setError('Please fill in all required fields.');
       return;
@@ -64,11 +85,16 @@ export default function AddEmployeeForm({ employeeId }: { employeeId: string | n
       const supabase = createClient();
       let data;
 
+      const employeeData = {
+        ...formData,
+        tenant_id: currentTenant.id
+      };
+
       if (employeeId) {
-        data = await updateEmployee(supabase, {id: employeeId, ...formData});
+        data = await updateEmployee(supabase, { id: employeeId, ...employeeData });
       } else {
-        const { id, ...employeeData } = formData as Employee;
-        data = await addEmployee(supabase, employeeData);
+        const { id, ...newEmployeeData } = employeeData as Employee;
+        data = await addEmployee(supabase, newEmployeeData);
       }
 
       console.log('Employee added/updated successfully:', data);
@@ -78,6 +104,23 @@ export default function AddEmployeeForm({ employeeId }: { employeeId: string | n
       console.error('Error adding/updating employee:', error);
     }
   };
+
+  if (!currentTenant) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <h2 className="text-lg font-semibold">No Tenant Selected</h2>
+          <p className="text-muted-foreground">Please select a tenant from your account settings.</p>
+          <Button 
+            className="mt-4"
+            onClick={() => router.push('/account')}
+          >
+            Go to Account Settings
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto">

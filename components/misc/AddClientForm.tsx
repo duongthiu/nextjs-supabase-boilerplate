@@ -11,6 +11,8 @@ import { addClient, updateClient, getClient } from '@/utils/supabase/queries';
 import { Client } from '@/utils/types';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { CustomCheckbox } from '@/components/ui/custom-checkbox';
+import { useTenant } from '@/utils/tenant-context';
+import { toast } from '@/components/ui/use-toast';
 
 export default function AddClientForm({ clientId }: { clientId: string | null}) {
   const [formData, setFormData] = useState<Client | {}>({
@@ -24,18 +26,32 @@ export default function AddClientForm({ clientId }: { clientId: string | null}) 
   });
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { currentTenant } = useTenant();
 
   useEffect(() => {
     const fetchClient = async () => {
+      if (!currentTenant) {
+        return;
+      }
+
       if (clientId) {
         const supabase: SupabaseClient = createClient();
         const client = await getClient(supabase, clientId);
-        setFormData(client);
+        if (client && client.tenant_id === currentTenant.id) {
+          setFormData(client);
+        } else {
+          toast({
+            title: "Error",
+            description: "Client not found or belongs to different tenant.",
+            variant: "destructive",
+          });
+          router.push('/clients');
+        }
       }
     };
 
     fetchClient();
-  }, [clientId]);
+  }, [clientId, currentTenant]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -48,6 +64,11 @@ export default function AddClientForm({ clientId }: { clientId: string | null}) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!currentTenant) {
+      setError('No tenant selected. Please select a tenant from account settings.');
+      return;
+    }
 
     if (!(formData as Client).name || !(formData as Client).client_code || !(formData as Client).country_code_iso_2) {
       setError('Please fill in all required fields.');
@@ -68,20 +89,41 @@ export default function AddClientForm({ clientId }: { clientId: string | null}) 
       const supabase = createClient();
       let data;
 
+      const clientData = {
+        ...formData,
+        tenant_id: currentTenant.id
+      };
+
       if (clientId) {
-        data = await updateClient(supabase, { id: clientId, ...formData });
+        data = await updateClient(supabase, { id: clientId, ...clientData });
       } else {
-        const { id, ...clientData } = formData as Client;
-        data = await addClient(supabase, clientData);
+        const { id, ...newClientData } = clientData as Client;
+        data = await addClient(supabase, newClientData);
       }
 
-      console.log('Client added successfully:', data);
       router.push('/clients');
     } catch (error: any) {
-      setError(error.message || 'Failed to add client.');
-      console.error('Error adding client:', error);
+      setError(error.message || 'Failed to add/update client.');
+      console.error('Error adding/updating client:', error);
     }
   };
+
+  if (!currentTenant) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <h2 className="text-lg font-semibold">No Tenant Selected</h2>
+          <p className="text-muted-foreground">Please select a tenant from your account settings.</p>
+          <Button 
+            className="mt-4"
+            onClick={() => router.push('/account')}
+          >
+            Go to Account Settings
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto">

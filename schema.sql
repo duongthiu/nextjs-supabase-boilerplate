@@ -80,3 +80,49 @@ create table
 -- Create index for common lookup patterns
 create index idx_employee_allocation on public."Allocations" using btree (employee_id, start_date, end_date) tablespace pg_default;
 create index idx_project_allocation on public."Allocations" using btree (project_id, start_date, end_date) tablespace pg_default;
+
+-- Create Tenants table
+CREATE TABLE public."Tenants" (
+    id UUID NOT NULL DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    subdomain VARCHAR(100) NOT NULL,
+    plan VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    CONSTRAINT Tenants_pkey PRIMARY KEY (id),
+    CONSTRAINT unique_subdomain UNIQUE (subdomain)
+) TABLESPACE pg_default;
+
+-- Update Employees table
+ALTER TABLE public."Employees"
+    ADD COLUMN tenant_id UUID NOT NULL REFERENCES public.Tenants(id) ON DELETE CASCADE;
+
+-- Update Clients table
+ALTER TABLE public."Clients" 
+    ADD COLUMN tenant_id UUID NOT NULL REFERENCES public.Tenants(id) ON DELETE CASCADE;
+
+-- Update Projects table
+ALTER TABLE public."Projects"
+    ADD COLUMN tenant_id UUID NOT NULL REFERENCES public.Tenants(id) ON DELETE CASCADE;
+
+-- Update Allocations table
+ALTER TABLE public."Allocations"
+    ADD COLUMN tenant_id UUID NOT NULL REFERENCES public.Tenants(id) ON DELETE CASCADE;
+
+-- Create indexes for tenant lookups
+CREATE INDEX ON public."Employees" (tenant_id);
+CREATE INDEX ON public."Clients" (tenant_id);
+CREATE INDEX ON public."Projects" (tenant_id);
+CREATE INDEX ON public."Allocations" (tenant_id);
+
+CREATE TABLE public."UserTenants" (
+    id UUID NOT NULL DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    tenant_id UUID NOT NULL REFERENCES public."Tenants"(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    CONSTRAINT UserTenants_pkey PRIMARY KEY (id),
+    CONSTRAINT unique_user_tenant UNIQUE (user_id, tenant_id)
+) TABLESPACE pg_default;

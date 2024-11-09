@@ -10,6 +10,7 @@ export const getUser = cache(async (supabase: SupabaseClient) => {
 
 export async function getEmployees(
   supabase: SupabaseClient,
+  tenantId: string,
   page?: number,
   itemsPerPage?: number
 ) {
@@ -17,9 +18,9 @@ export async function getEmployees(
     .from('Employees')
     .select('*', { count: 'exact' })
     .eq('is_deleted', false)
+    .eq('tenant_id', tenantId)
     .order('surname', { ascending: true });
 
-  // Apply pagination only if both page and itemsPerPage are provided
   if (page !== undefined && itemsPerPage !== undefined) {
     const startRow = (page - 1) * itemsPerPage;
     query = query.range(startRow, startRow + itemsPerPage - 1);
@@ -88,6 +89,7 @@ export async function updateEmployee(supabase: SupabaseClient, employeeData: any
 
 export async function getClients(
   supabase: SupabaseClient,
+  tenantId: string,
   page?: number,
   itemsPerPage?: number
 ) {
@@ -95,9 +97,9 @@ export async function getClients(
     .from('Clients')
     .select('*', { count: 'exact' })
     .eq('is_deleted', false)
+    .eq('tenant_id', tenantId)
     .order('name', { ascending: true });
 
-  // Apply pagination only if both page and itemsPerPage are provided
   if (page !== undefined && itemsPerPage !== undefined) {
     const startRow = (page - 1) * itemsPerPage;
     query = query.range(startRow, startRow + itemsPerPage - 1);
@@ -160,15 +162,17 @@ export async function updateClient(supabase: SupabaseClient, clientData: any) {
 
 export async function getProjects(
   supabase: SupabaseClient,
+  tenantId: string,
   page?: number,
   itemsPerPage?: number
 ) {
   let query = supabase
     .from('Projects')
     .select('*, Clients(name)', { count: 'exact' })
+    // .eq('is_deleted', false)
+    .eq('tenant_id', tenantId)
     .order('name', { ascending: true });
 
-  // Apply pagination only if both page and itemsPerPage are provided
   if (page !== undefined && itemsPerPage !== undefined) {
     const startRow = (page - 1) * itemsPerPage;
     query = query.range(startRow, startRow + itemsPerPage - 1);
@@ -256,6 +260,7 @@ export async function searchClients(
 
 export async function getAllocations(
   supabase: SupabaseClient,
+  tenantId: string,
   page?: number,
   itemsPerPage?: number
 ) {
@@ -267,6 +272,7 @@ export async function getAllocations(
       Projects(name, code)
     `, { count: 'exact' })
     .eq('is_deleted', false)
+    .eq('tenant_id', tenantId)
     .order('start_date', { ascending: false });
 
   if (page !== undefined && itemsPerPage !== undefined) {
@@ -360,4 +366,21 @@ export async function updateAllocation(supabase: SupabaseClient, allocationData:
   }
 
   return data;
+}
+
+export async function getUserTenants(supabase: SupabaseClient, userId: string) {
+  const { data: userTenants, error } = await supabase
+    .from('UserTenants')
+    .select(`
+      *,
+      tenant:Tenants(*)
+    `)
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('Error fetching user tenants:', error);
+    return null;
+  }
+
+  return userTenants;
 }

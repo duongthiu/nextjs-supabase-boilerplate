@@ -11,6 +11,8 @@ import { Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Pagination } from '@/components/ui/pagination';
 import { DEFAULT_ITEMS_PER_PAGE } from '@/utils/constants';
+import { useTenant } from '@/utils/tenant-context';
+import { toast } from '@/components/ui/use-toast';
 
 interface ClientsPageProps {
   user: User;
@@ -23,25 +25,50 @@ export default function ClientsPage({ user }: ClientsPageProps) {
   const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_ITEMS_PER_PAGE);
   const [totalItems, setTotalItems] = useState(0);
   const router = useRouter();
+  const { currentTenant } = useTenant();
   
   useEffect(() => {
-    loadClients();
-  }, [currentPage, itemsPerPage]);
+    if (currentTenant) {
+      loadClients();
+    }
+  }, [currentPage, itemsPerPage, currentTenant]);
 
   async function loadClients() {
     try {
       setLoading(true);
       const supabase = createClient();
-      const { clients, count } = await getClients(supabase, currentPage, itemsPerPage);
+      const { clients, count } = await getClients(supabase, currentTenant!.id, currentPage, itemsPerPage);
       if (clients) {
         setClients(clients);
         setTotalItems(count || 0);
       }
     } catch (error) {
       console.error('Error loading clients:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load clients. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
+  }
+
+  if (!currentTenant) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <h2 className="text-lg font-semibold">No Tenant Selected</h2>
+          <p className="text-muted-foreground">Please select a tenant from your account settings.</p>
+          <Button 
+            className="mt-4"
+            onClick={() => router.push('/account')}
+          >
+            Go to Account Settings
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   const handlePageChange = (page: number) => {
