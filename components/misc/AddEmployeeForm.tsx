@@ -1,19 +1,24 @@
 'use client'
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createClient } from '@/utils/supabase/client'
-import { addEmployee, updateEmployee, getEmployee } from '@/utils/supabase/queries';
-import { useEffect } from 'react';
-import { Employee } from '@/utils/types';
+import { createClient } from '@/utils/supabase/client';
+import { addEmployee, updateEmployee, getEmployee, getDepartments, addEmployeeDepartments, removeEmployeeDepartments } from '@/utils/supabase/queries';
+import { Employee, Department } from '@/utils/types';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { CustomCheckbox } from '@/components/ui/custom-checkbox';
 import { useTenant } from '@/utils/tenant-context';
 import { toast } from '@/components/ui/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+interface FormattedDepartment extends Department {
+  level: number;
+  displayName: string;
+}
 
 export default function AddEmployeeForm({ employeeId }: { employeeId: string | null }) {
   const [formData, setFormData] = useState<Employee | {}>({
@@ -29,34 +34,82 @@ export default function AddEmployeeForm({ employeeId }: { employeeId: string | n
     birth_date: '',
     is_active: true,
     is_deleted: false,
-});
+  });
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
+  const [departments, setDepartments] = useState<FormattedDepartment[]>([]);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { currentTenant } = useTenant();
 
-  useEffect(() => {
-    const fetchEmployee = async () => {
-      if (!currentTenant) {
-        return;
-      }
+  // Function to format departments into hierarchical structure
+  const formatDepartmentsHierarchy = (
+    allDepartments: Department[],
+    parentId: string | null = null,
+    level: number = 0
+  ): FormattedDepartment[] => {
+    const result: FormattedDepartment[] = [];
+    
+    const depts = allDepartments.filter(d => d.parent_department_id === parentId);
+    
+    depts.forEach(dept => {
+      const prefix = '—'.repeat(level);
+      result.push({
+        ...dept,
+        level,
+        displayName: level > 0 ? `${prefix} ${dept.name}` : dept.name
+      });
+      
+      const children = formatDepartmentsHierarchy(allDepartments, dept.id, level + 1);
+      result.push(...children);
+    });
+    
+    return result;
+  };
 
-      if (employeeId) {
-        const supabase: SupabaseClient = createClient();
-        const employee = await getEmployee(supabase, employeeId);
-        if (employee && employee.tenant_id === currentTenant.id) {
-          setFormData(employee);
-        } else {
-          toast({
-            title: "Error",
-            description: "Employee not found or belongs to different tenant.",
-            variant: "destructive",
-          });
-          router.push('/employees');
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!currentTenant) return;
+
+      try {
+        const supabase = createClient();
+
+        // Fetch departments
+        const { departments: departmentsData } = await getDepartments(supabase, currentTenant.id);
+        if (departmentsData) {
+          const formattedDepts = formatDepartmentsHierarchy(departmentsData);
+          setDepartments(formattedDepts);
         }
+
+        // Fetch employee if editing
+        if (employeeId) {
+          const employee = await getEmployee(supabase, employeeId);
+          if (employee && employee.tenant_id === currentTenant.id) {
+            setFormData(employee);
+            // Fetch employee's departments
+            const { data: employeeDepts } = await supabase
+              .from('EmployeeDepartments')
+              .select('department_id')
+              .eq('employee_id', employeeId);
+            
+            if (employeeDepts) {
+              setSelectedDepartments(employeeDepts.map(ed => ed.department_id));
+            }
+          } else {
+            toast({
+              title: "Error",
+              description: "Employee not found or belongs to different tenant.",
+              variant: "destructive",
+            });
+            router.push('/employees');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setError('Failed to load data');
       }
     };
 
-    fetchEmployee();
+    fetchData();
   }, [employeeId, currentTenant]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,25 +136,30 @@ export default function AddEmployeeForm({ employeeId }: { employeeId: string | n
 
     try {
       const supabase = createClient();
-      let data;
-
       const employeeData = {
         ...formData,
         tenant_id: currentTenant.id
       };
 
       if (employeeId) {
-        data = await updateEmployee(supabase, { id: employeeId, ...employeeData });
+        await updateEmployee(supabase, { id: employeeId, ...employeeData });
+        // Update departments
+        await removeEmployeeDepartments(supabase, employeeId);
+        if (selectedDepartments.length > 0) {
+          await addEmployeeDepartments(supabase, employeeId, selectedDepartments);
+        }
       } else {
-        const { id, ...newEmployeeData } = employeeData as Employee;
-        data = await addEmployee(supabase, newEmployeeData);
+        const data = await addEmployee(supabase, employeeData);
+        // Add departments for new employee
+        if (data && selectedDepartments.length > 0) {
+          await addEmployeeDepartments(supabase, data[0].id, selectedDepartments);
+        }
       }
 
-      console.log('Employee added/updated successfully:', data);
       router.push('/employees');
     } catch (error: any) {
-      setError(error.message || 'Failed to add/update employee.');
-      console.error('Error adding/updating employee:', error);
+      setError(error.message || 'Failed to save employee.');
+      console.error('Error saving employee:', error);
     }
   };
 
@@ -124,15 +182,13 @@ export default function AddEmployeeForm({ employeeId }: { employeeId: string | n
 
   return (
     <div className="container mx-auto">
-      <main className="flex-1 p-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>{employeeId ? 'Edit Employee' : 'Add New Employee'}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit}>
-              <div className="grid gap-4">
-
+      <Card>
+        <CardHeader>
+          <CardTitle>{employeeId ? 'Edit Employee' : 'Add New Employee'}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit}>
+            <div className="grid gap-4">
               <div>
                 <Label htmlFor="given_name">Given Name *</Label>
                 <Input
@@ -242,16 +298,38 @@ export default function AddEmployeeForm({ employeeId }: { employeeId: string | n
                   }
                 />
               </div>
-                {error && <div className="text-red-500 bg-red-100 p-2 rounded">{error}</div>}
-                <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={() => router.push('/employees')}>Cancel</Button>
-                  <Button type="submit">Submit</Button>
-                </div>
+              <div>
+                <Label htmlFor="departments">Departments</Label>
+                <Select 
+                  value={selectedDepartments.join(',')}
+                  onValueChange={(value) => setSelectedDepartments(value.split(',').filter(Boolean))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select departments" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((dept) => (
+                      <SelectItem 
+                        key={dept.id} 
+                        value={dept.id}
+                        className={`pl-${dept.level * 4}`}
+                      >
+                        {dept.displayName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            </form>
-          </CardContent>
-        </Card>
-      </main>
+
+              {error && <div className="text-red-500 bg-red-100 p-2 rounded">{error}</div>}
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => router.push('/employees')}>Cancel</Button>
+                <Button type="submit">Submit</Button>
+              </div>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

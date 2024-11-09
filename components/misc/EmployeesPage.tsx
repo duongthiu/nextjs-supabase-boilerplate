@@ -13,7 +13,6 @@ import { Pagination } from '@/components/ui/pagination';
 import { DEFAULT_ITEMS_PER_PAGE } from '@/utils/constants';
 import { useTenant } from '@/utils/tenant-context';
 import { toast } from '@/components/ui/use-toast';
-
 interface EmployeesPageProps {
   user: User;
 }
@@ -103,6 +102,7 @@ export default function EmployeesPage({ user }: EmployeesPageProps) {
                 <th className="p-2">Surname</th>
                 <th className="p-2">Email</th>
                 <th className="p-2">Phone</th>
+                <th className="p-2">Departments</th>
                 <th className="p-2">Status</th>
                 <th className="p-2">Actions</th>
               </tr>
@@ -118,6 +118,18 @@ export default function EmployeesPage({ user }: EmployeesPageProps) {
                   <td className="p-2">{employee.surname}</td>
                   <td className="p-2">{employee.company_email}</td>
                   <td className="p-2">{employee.mobile_number}</td>
+                  <td className="p-2">
+                    <div className="flex flex-wrap gap-1">
+                      {employee.departments?.map((ed: any) => (
+                        <span 
+                          key={ed.department.id}
+                          className="inline-flex px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-800"
+                        >
+                          {ed.department.name}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
                   <td className="p-2">
                     <span className={`inline-flex px-2 py-1 text-xs font-medium rounded ${
                       employee.is_active 

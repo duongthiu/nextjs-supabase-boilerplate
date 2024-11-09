@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { cache } from 'react';
+import { Employee } from '../types';
 
 export const getUser = cache(async (supabase: SupabaseClient) => {
   const {
@@ -16,7 +17,12 @@ export async function getEmployees(
 ) {
   let query = supabase
     .from('Employees')
-    .select('*', { count: 'exact' })
+    .select(`
+      *,
+      departments:EmployeeDepartments(
+        department:Departments(*)
+      )
+    `, { count: 'exact' })
     .eq('is_deleted', false)
     .eq('tenant_id', tenantId)
     .order('surname', { ascending: true });
@@ -470,4 +476,40 @@ export async function updateDepartment(supabase: SupabaseClient, departmentData:
   }
 
   return data;
+}
+
+export async function addEmployeeDepartments(
+  supabase: SupabaseClient, 
+  employeeId: string, 
+  departmentIds: string[]
+) {
+  const { error } = await supabase
+    .from('EmployeeDepartments')
+    .upsert(
+      departmentIds.map(departmentId => ({
+        employee_id: employeeId,
+        department_id: departmentId,
+        assigned_at: new Date().toISOString()
+      }))
+    );
+
+  if (error) {
+    console.error('Error adding employee departments:', error);
+    throw error;
+  }
+}
+
+export async function removeEmployeeDepartments(
+  supabase: SupabaseClient, 
+  employeeId: string
+) {
+  const { error } = await supabase
+    .from('EmployeeDepartments')
+    .delete()
+    .eq('employee_id', employeeId);
+
+  if (error) {
+    console.error('Error removing employee departments:', error);
+    throw error;
+  }
 }
