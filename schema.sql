@@ -160,3 +160,36 @@ create index if not exists "Departments_parent_department_id_idx" on public."Dep
 create index if not exists "EmployeeDepartments_employee_id_idx" on public."EmployeeDepartments" using btree (employee_id) tablespace pg_default;
 
 create index if not exists "EmployeeDepartments_department_id_idx" on public."EmployeeDepartments" using btree (department_id) tablespace pg_default;
+
+-- Create table for Knowledge management
+create table
+  public."Knowledges" (
+    id uuid not null default gen_random_uuid (),
+    title character varying(255) not null,
+    description text null,
+    tenant_id uuid not null,
+    created_at timestamp with time zone not null default now(),
+    updated_at timestamp with time zone not null default now(),
+    is_active boolean not null default true,
+    is_deleted boolean not null default false,
+    constraint knowledges_pkey primary key (id),
+    constraint unique_knowledge_title_per_tenant unique (title, tenant_id),
+    constraint knowledges_tenant_id_fkey foreign key (tenant_id) references "Tenants" (id) on delete cascade
+  ) tablespace pg_default;
+
+-- Create table to link Knowledge to Employees
+create table
+  public."EmployeeKnowledges" (
+    employee_id uuid not null,
+    knowledge_id uuid not null,
+    acquired_at timestamp with time zone not null default now(),
+    constraint employee_knowledges_pkey primary key (employee_id, knowledge_id),
+    constraint employee_knowledges_employee_id_fkey foreign key (employee_id) references "Employees" (id) on delete cascade,
+    constraint employee_knowledges_knowledge_id_fkey foreign key (knowledge_id) references "Knowledges" (id) on delete cascade
+  ) tablespace pg_default;
+
+create index if not exists "Knowledges_tenant_id_idx" on public."Knowledges" using btree (tenant_id) tablespace pg_default;
+
+create index if not exists "EmployeeKnowledges_employee_id_idx" on public."EmployeeKnowledges" using btree (employee_id) tablespace pg_default;
+
+create index if not exists "EmployeeKnowledges_knowledge_id_idx" on public."EmployeeKnowledges" using btree (knowledge_id) tablespace pg_default;

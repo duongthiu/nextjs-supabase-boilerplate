@@ -98,3 +98,20 @@ export type Department = {
   parent_department?: Department;
   child_departments?: Department[];
 }
+
+export type Knowledge = {
+  id: string;
+  title: string;
+  description?: string;
+  tenant_id: string;
+  created_at: string;
+  updated_at: string;
+  is_active: boolean;
+  is_deleted: boolean;
+}
+
+export type EmployeeKnowledge = {
+  employee_id: string;
+  knowledge_id: string;
+  acquired_at: string;
+}

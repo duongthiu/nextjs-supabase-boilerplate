@@ -513,3 +513,140 @@ export async function removeEmployeeDepartments(
     throw error;
   }
 }
+
+export async function getKnowledges(
+  supabase: SupabaseClient,
+  tenantId: string,
+  page?: number,
+  itemsPerPage?: number
+) {
+  let query = supabase
+    .from('Knowledges')
+    .select('*', { count: 'exact' })
+    .eq('is_deleted', false)
+    .eq('tenant_id', tenantId)
+    .order('title', { ascending: true });
+
+  if (page !== undefined && itemsPerPage !== undefined) {
+    const startRow = (page - 1) * itemsPerPage;
+    query = query.range(startRow, startRow + itemsPerPage - 1);
+  }
+
+  const { data: knowledges, error, count } = await query;
+
+  if (error) {
+    console.error('Error fetching knowledges:', error);
+    return { knowledges: null, count: 0 };
+  }
+
+  return { knowledges, count };
+}
+
+export async function getKnowledge(supabase: SupabaseClient, id: string) {
+  const { data: knowledge, error } = await supabase
+    .from('Knowledges')
+    .select('*')
+    .eq('id', id)
+    .eq('is_deleted', false)
+    .single();
+
+  if (error) {
+    console.error('Error fetching knowledge:', error);
+    return null;
+  }
+
+  return knowledge;
+}
+
+export async function addKnowledge(supabase: SupabaseClient, knowledgeData: any) {
+  const { data, error } = await supabase
+    .from('Knowledges')
+    .insert([{
+      ...knowledgeData,
+      is_deleted: false
+    }])
+    .select();
+
+  if (error) {
+    console.error('Error adding knowledge:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function updateKnowledge(supabase: SupabaseClient, knowledgeData: any) {
+  const { id, ...updateData } = knowledgeData;
+  
+  const { data, error } = await supabase
+    .from('Knowledges')
+    .update({
+      ...updateData,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', id)
+    .select();
+
+  if (error) {
+    console.error('Error updating knowledge:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function getEmployeeKnowledges(
+  supabase: SupabaseClient,
+  employeeId: string
+) {
+  const { data, error } = await supabase
+    .from('EmployeeKnowledges')
+    .select(`
+      *,
+      knowledge:Knowledges(*)
+    `)
+    .eq('employee_id', employeeId);
+
+  if (error) {
+    console.error('Error fetching employee knowledges:', error);
+    return null;
+  }
+
+  return data;
+}
+
+export async function addEmployeeKnowledge(
+  supabase: SupabaseClient,
+  employeeId: string,
+  knowledgeId: string
+) {
+  const { error } = await supabase
+    .from('EmployeeKnowledges')
+    .insert([{
+      employee_id: employeeId,
+      knowledge_id: knowledgeId,
+      acquired_at: new Date().toISOString()
+    }]);
+
+  if (error) {
+    console.error('Error adding employee knowledge:', error);
+    throw error;
+  }
+}
+
+export async function removeEmployeeKnowledge(
+  supabase: SupabaseClient,
+  employeeId: string,
+  knowledgeId: string
+) {
+  const { error } = await supabase
+    .from('EmployeeKnowledges')
+    .delete()
+    .eq('employee_id', employeeId)
+    .eq('knowledge_id', knowledgeId);
+
+  if (error) {
+    console.error('Error removing employee knowledge:', error);
+    throw error;
+  }
+}
