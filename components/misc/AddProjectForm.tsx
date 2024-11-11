@@ -8,11 +8,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createClient } from '@/utils/supabase/client';
-import { getClients, addProject, getProject, updateProject, searchClients } from '@/utils/supabase/queries';
+import { getClients, addProject, getProject, updateProject, searchClients, getKnowledges, getProjectKnowledges, addProjectKnowledge, removeProjectKnowledge } from '@/utils/supabase/queries';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Autocomplete } from '@/components/ui/autocomplete';
 import { CustomCheckbox } from '@/components/ui/custom-checkbox';
 import { useTenant } from '@/utils/tenant-context';
+import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronDown, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/utils/cn";
 
 interface FormData {
   code: string;
@@ -47,6 +52,11 @@ interface Client {
   name: string;
 }
 
+interface Knowledge {
+  id: string;
+  title: string;
+}
+
 export default function AddProjectForm({ projectId }: { projectId: string | null }) {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +66,9 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
   const router = useRouter();
   const supabase: SupabaseClient = createClient();
   const { currentTenant } = useTenant();
+  const [knowledges, setKnowledges] = useState<Knowledge[]>([]);
+  const [selectedKnowledges, setSelectedKnowledges] = useState<string[]>([]);
+  const [knowledgeSearchOpen, setKnowledgeSearchOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -71,6 +84,12 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
           setClients(clientsData);
         }
 
+        // Fetch knowledges
+        const { knowledges: knowledgesData } = await getKnowledges(supabase, currentTenant.id);
+        if (knowledgesData) {
+          setKnowledges(knowledgesData);
+        }
+
         // Fetch project if editing
         if (projectId) {
           const project = await getProject(supabase, projectId);
@@ -83,6 +102,12 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
               billable: project.billable?.toString() || 'false',
               deal_status: project.deal_status || 'PENDING',
             });
+          }
+
+          // If editing, fetch project's knowledges
+          const projectKnowledges = await getProjectKnowledges(supabase, projectId);
+          if (projectKnowledges) {
+            setSelectedKnowledges(projectKnowledges.map(pk => pk.knowledge_id));
           }
         }
       } catch (error) {
@@ -135,8 +160,17 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
 
       if (projectId) {
         data = await updateProject(supabase, { id: projectId, ...projectData });
+        // Update knowledges
+        await removeProjectKnowledge(supabase, projectId);
+        if (selectedKnowledges.length > 0) {
+          await addProjectKnowledge(supabase, projectId, selectedKnowledges);
+        }
       } else {
         data = await addProject(supabase, projectData);
+        // Add knowledges for new project
+        if (data && selectedKnowledges.length > 0) {
+          await addProjectKnowledge(supabase, data[0].id, selectedKnowledges);
+        }
       }
 
       console.log('Project added/updated successfully:', data);
@@ -176,6 +210,19 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
         placeholder="Search clients..."
       />
     );
+  };
+
+  const handleKnowledgeSelect = (knowledgeId: string) => {
+    setSelectedKnowledges(current => {
+      if (current.includes(knowledgeId)) {
+        return current.filter(id => id !== knowledgeId);
+      }
+      return [...current, knowledgeId];
+    });
+  };
+
+  const removeKnowledge = (knowledgeId: string) => {
+    setSelectedKnowledges(current => current.filter(id => id !== knowledgeId));
   };
 
   if (loading) {
@@ -317,6 +364,77 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
                     value={formData.note || ''}
                     onChange={handleInputChange}
                   />
+                </div>
+                <div>
+                  <Label htmlFor="knowledges">Required Knowledge</Label>
+                  <Popover open={knowledgeSearchOpen} onOpenChange={setKnowledgeSearchOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={knowledgeSearchOpen}
+                        className="w-full justify-between"
+                      >
+                        {selectedKnowledges.length === 0 
+                          ? "Select required knowledge..." 
+                          : `${selectedKnowledges.length} selected`}
+                        <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <CommandInput placeholder="Search knowledge..." />
+                        <CommandEmpty>No knowledge found.</CommandEmpty>
+                        <CommandGroup className="max-h-64 overflow-auto">
+                          {knowledges.map((knowledge) => (
+                            <CommandItem
+                              key={knowledge.id}
+                              value={knowledge.title}
+                              onSelect={() => handleKnowledgeSelect(knowledge.id)}
+                              className="cursor-pointer"
+                            >
+                              <div className="flex items-center gap-2">
+                                <div className={cn(
+                                  "h-4 w-4 border rounded-sm flex items-center justify-center",
+                                  selectedKnowledges.includes(knowledge.id) ? "bg-primary border-primary" : "border-input"
+                                )}>
+                                  {selectedKnowledges.includes(knowledge.id) && 
+                                    <Check className="h-3 w-3 text-primary-foreground" />
+                                  }
+                                </div>
+                                {knowledge.title}
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {selectedKnowledges.map((knowledgeId) => {
+                      const knowledge = knowledges.find(k => k.id === knowledgeId);
+                      return knowledge ? (
+                        <Badge
+                          key={knowledge.id}
+                          variant="secondary"
+                          className="flex items-center gap-1"
+                        >
+                          {knowledge.title}
+                          <button
+                            type="button"
+                            className="ml-1 hover:bg-muted rounded-full"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              removeKnowledge(knowledge.id);
+                            }}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ) : null;
+                    })}
+                  </div>
                 </div>
                 {error && <div className="text-red-500 bg-red-100 p-2 rounded">{error}</div>}
                 <div className="flex justify-end space-x-2">

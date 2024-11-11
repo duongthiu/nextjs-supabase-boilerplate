@@ -648,3 +648,59 @@ export async function removeEmployeeKnowledge(
     throw error;
   }
 }
+
+export async function getProjectKnowledges(
+  supabase: SupabaseClient,
+  projectId: string
+) {
+  const { data, error } = await supabase
+    .from('ProjectKnowledges')
+    .select(`
+      *,
+      knowledge:Knowledges(*)
+    `)
+    .eq('project_id', projectId);
+
+  if (error) {
+    console.error('Error fetching project knowledges:', error);
+    return null;
+  }
+
+  return data;
+}
+
+export async function addProjectKnowledge(
+  supabase: SupabaseClient,
+  projectId: string,
+  knowledgeIds: string[]
+) {
+  const { error } = await supabase
+    .from('ProjectKnowledges')
+    .insert(
+      knowledgeIds.map(knowledgeId => ({
+        project_id: projectId,
+        knowledge_id: knowledgeId,
+        assigned_at: new Date().toISOString()
+      }))
+    );
+
+  if (error) {
+    console.error('Error adding project knowledge:', error);
+    throw error;
+  }
+}
+
+export async function removeProjectKnowledge(
+  supabase: SupabaseClient,
+  projectId: string,
+) {
+  const { error } = await supabase
+    .from('ProjectKnowledges')
+    .delete()
+    .eq('project_id', projectId);
+
+  if (error) {
+    console.error('Error removing project knowledge:', error);
+    throw error;
+  }
+}

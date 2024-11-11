@@ -193,3 +193,17 @@ create index if not exists "Knowledges_tenant_id_idx" on public."Knowledges" usi
 create index if not exists "EmployeeKnowledges_employee_id_idx" on public."EmployeeKnowledges" using btree (employee_id) tablespace pg_default;
 
 create index if not exists "EmployeeKnowledges_knowledge_id_idx" on public."EmployeeKnowledges" using btree (knowledge_id) tablespace pg_default;
+
+create table
+  public."ProjectKnowledges" (
+    project_id uuid not null,
+    knowledge_id uuid not null,
+    assigned_at timestamp with time zone not null default now(),
+    constraint project_knowledges_pkey primary key (project_id, knowledge_id),
+    constraint project_knowledges_project_id_fkey foreign key (project_id) references "Projects" (id) on delete cascade,
+    constraint project_knowledges_knowledge_id_fkey foreign key (knowledge_id) references "Knowledges" (id) on delete cascade
+  ) tablespace pg_default;
+
+create index if not exists "ProjectKnowledges_project_id_idx" on public."ProjectKnowledges" using btree (project_id) tablespace pg_default;
+
+create index if not exists "ProjectKnowledges_knowledge_id_idx" on public."ProjectKnowledges" using btree (knowledge_id) tablespace pg_default;
