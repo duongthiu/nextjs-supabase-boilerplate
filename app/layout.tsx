@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { PropsWithChildren } from 'react';
 import { getURL } from '@/utils/helpers';
 import '@/styles/main.css';
-import { ThemeProvider } from '@/components/landing/theme-provider';
+import { ThemeProvider } from '@/app/theme-provider';
 import { TenantProvider } from '@/utils/tenant-context';
 import { Toaster } from '@/components/ui/toaster';
 
