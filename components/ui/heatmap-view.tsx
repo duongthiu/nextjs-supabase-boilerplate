@@ -65,11 +65,11 @@ export function HeatmapView({ allocations, weeks = 12 }: HeatmapViewProps) {
 
   // Function to determine cell color based on workload
   const getCellColor = (workload: number) => {
-    if (workload === 0) return 'bg-zinc-100';
-    if (workload <= 50) return 'bg-green-200';
-    if (workload <= 80) return 'bg-yellow-200';
-    if (workload <= 100) return 'bg-orange-200';
-    return 'bg-red-200';
+    if (workload === 0) return 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400';
+    if (workload <= 50) return 'bg-green-200 dark:bg-green-900/50 text-green-900 dark:text-green-100';
+    if (workload <= 80) return 'bg-yellow-200 dark:bg-yellow-900/50 text-yellow-900 dark:text-yellow-100';
+    if (workload <= 100) return 'bg-orange-200 dark:bg-orange-900/50 text-orange-900 dark:text-orange-100';
+    return 'bg-red-200 dark:bg-red-900/50 text-red-900 dark:text-red-100';
   };
 
   // Get unique employee names
@@ -80,14 +80,16 @@ export function HeatmapView({ allocations, weeks = 12 }: HeatmapViewProps) {
       <div className="min-w-max">
         {/* Header */}
         <div className="flex">
-          <div className="w-48 shrink-0 p-2 font-medium">Employee</div>
+          <div className="w-48 shrink-0 p-2 font-medium border-b dark:border-zinc-700">Employee</div>
           <div className="flex">
             {weeksArray.map((week, index) => (
               <div 
                 key={index}
                 className={cn(
-                  "w-12 text-center text-xs p-1",
-                  isSameMonth(week.start, new Date()) ? "bg-blue-50" : ""
+                  "w-12 text-center text-xs p-1 border-b dark:border-zinc-700",
+                  isSameMonth(week.start, new Date()) 
+                    ? "bg-blue-50 dark:bg-blue-950/30" 
+                    : ""
                 )}
               >
                 {format(week.start, 'MMM d')}
@@ -98,7 +100,7 @@ export function HeatmapView({ allocations, weeks = 12 }: HeatmapViewProps) {
 
         {/* Rows */}
         {employees.map(employee => (
-          <div key={employee} className="flex border-t">
+          <div key={employee} className="flex border-b dark:border-zinc-700">
             <div className="w-48 shrink-0 p-2 truncate" title={employee}>
               {employee}
             </div>
@@ -110,7 +112,7 @@ export function HeatmapView({ allocations, weeks = 12 }: HeatmapViewProps) {
                   <div
                     key={index}
                     className={cn(
-                      "w-12 h-12 border-r border-b flex items-center justify-center text-xs",
+                      "w-12 h-12 border-r dark:border-zinc-700 flex items-center justify-center text-xs",
                       getCellColor(workload)
                     )}
                     title={`${employee}: ${workload}% (${format(week.start, 'MMM d')})`}
@@ -127,19 +129,31 @@ export function HeatmapView({ allocations, weeks = 12 }: HeatmapViewProps) {
       {/* Legend */}
       <div className="mt-4 flex items-center gap-4 text-sm">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-green-200"></div>
+          <div className={cn(
+            "w-4 h-4 rounded",
+            "bg-green-200 dark:bg-green-900/50"
+          )}></div>
           <span>≤ 50%</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-yellow-200"></div>
+          <div className={cn(
+            "w-4 h-4 rounded",
+            "bg-yellow-200 dark:bg-yellow-900/50"
+          )}></div>
           <span>51-80%</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-orange-200"></div>
+          <div className={cn(
+            "w-4 h-4 rounded",
+            "bg-orange-200 dark:bg-orange-900/50"
+          )}></div>
           <span>81-100%</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-red-200"></div>
+          <div className={cn(
+            "w-4 h-4 rounded",
+            "bg-red-200 dark:bg-red-900/50"
+          )}></div>
           <span>&gt; 100%</span>
         </div>
       </div>

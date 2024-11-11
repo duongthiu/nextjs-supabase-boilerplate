@@ -94,10 +94,11 @@ export function CalendarView({ allocations }: CalendarViewProps) {
   }, [days, allocations]);
 
   const getAllocationColor = (percentage: number) => {
-    if (percentage <= 50) return 'bg-green-100 hover:bg-green-200';
-    if (percentage <= 80) return 'bg-yellow-100 hover:bg-yellow-200';
-    if (percentage <= 100) return 'bg-orange-100 hover:bg-orange-200';
-    return 'bg-red-100 hover:bg-red-200';
+    if (percentage === 0) return 'bg-muted hover:bg-muted/80';
+    if (percentage <= 50) return 'bg-green-200 hover:bg-green-300 dark:bg-green-900 dark:hover:bg-green-800 text-green-900 dark:text-green-100';
+    if (percentage <= 80) return 'bg-yellow-200 hover:bg-yellow-300 dark:bg-yellow-900 dark:hover:bg-yellow-800 text-yellow-900 dark:text-yellow-100';
+    if (percentage <= 100) return 'bg-orange-200 hover:bg-orange-300 dark:bg-orange-900 dark:hover:bg-orange-800 text-orange-900 dark:text-orange-100';
+    return 'bg-red-200 hover:bg-red-300 dark:bg-red-900 dark:hover:bg-red-800 text-red-900 dark:text-red-100';
   };
 
   const formatTooltip = (allocation: DayAllocation) => {
@@ -238,7 +239,8 @@ export function CalendarView({ allocations }: CalendarViewProps) {
               className={cn(
                 "min-h-[120px] p-1 border rounded-md",
                 !isSameMonth(day, currentDate) && "bg-muted/50",
-                isToday(day) && "border-primary"
+                isToday(day) && "border-primary",
+                "dark:border-zinc-700"
               )}
             >
               <div className="text-right text-sm mb-1">
@@ -248,6 +250,37 @@ export function CalendarView({ allocations }: CalendarViewProps) {
             </div>
           );
         })}
+      </div>
+
+      <div className="mt-4 flex items-center gap-4 text-sm">
+        <div className="flex items-center gap-2">
+          <div className={cn(
+            "w-4 h-4 rounded",
+            "bg-green-200 dark:bg-green-900"
+          )}></div>
+          <span>≤ 50%</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className={cn(
+            "w-4 h-4 rounded",
+            "bg-yellow-200 dark:bg-yellow-900"
+          )}></div>
+          <span>51-80%</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className={cn(
+            "w-4 h-4 rounded",
+            "bg-orange-200 dark:bg-orange-900"
+          )}></div>
+          <span>81-100%</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className={cn(
+            "w-4 h-4 rounded",
+            "bg-red-200 dark:bg-red-900"
+          )}></div>
+          <span>&gt; 100%</span>
+        </div>
       </div>
     </div>
   );
