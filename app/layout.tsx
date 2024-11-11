@@ -2,15 +2,9 @@ import { Metadata } from 'next';
 import { PropsWithChildren } from 'react';
 import { getURL } from '@/utils/helpers';
 import '@/styles/main.css';
-import { PHProvider } from './providers';
 import { ThemeProvider } from '@/components/landing/theme-provider';
 import { TenantProvider } from '@/utils/tenant-context';
-import dynamic from 'next/dynamic';
 import { Toaster } from '@/components/ui/toaster';
-
-const PostHogPageView = dynamic(() => import('./PostHogPageView'), {
-  ssr: false
-});
 
 const meta = {
   title: 'Next.js Supabase Boilerplate',
@@ -59,18 +53,15 @@ export default async function RootLayout({ children }: PropsWithChildren) {
         <ThemeProvider
           defaultTheme="system"
         >
-          <PHProvider>
-            <TenantProvider>
-              <PostHogPageView />
-              <main
-                id="skip"
-                className="min-h-[calc(100dvh-4rem)] md:min-h[calc(100dvh-5rem)]"
-              >
-                {children}
-              </main>
-              <Toaster />
-            </TenantProvider>
-          </PHProvider>
+          <TenantProvider>
+            <main
+              id="skip"
+              className="min-h-[calc(100dvh-4rem)] md:min-h[calc(100dvh-5rem)]"
+            >
+              {children}
+            </main>
+            <Toaster />
+          </TenantProvider>
         </ThemeProvider>
       </body>
     </html>
