@@ -7,19 +7,20 @@ import { getAllocations } from '@/utils/supabase/queries';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Settings, List, Calendar } from 'lucide-react';
+import { Settings, List, Calendar, LayoutGrid } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Pagination } from '@/components/ui/pagination';
 import { DEFAULT_ITEMS_PER_PAGE } from '@/utils/constants';
 import { CalendarView } from '@/components/ui/calendar-view';
 import { useTenant } from '@/utils/tenant-context';
 import { toast } from '@/components/ui/use-toast';
+import { HeatmapView } from '@/components/ui/heatmap-view';
 
 interface AllocationsPageProps {
   user: User;
 }
 
-type ViewMode = 'list' | 'calendar';
+type ViewMode = 'list' | 'calendar' | 'heatmap';
 
 export default function AllocationsPage({ user }: AllocationsPageProps) {
   const [allocations, setAllocations] = useState<any[]>([]);
@@ -113,14 +114,29 @@ export default function AllocationsPage({ user }: AllocationsPageProps) {
             <Button
               variant="outline"
               size="icon"
-              onClick={toggleViewMode}
-              title={viewMode === 'list' ? 'Switch to Calendar View' : 'Switch to List View'}
+              onClick={() => setViewMode('list')}
+              title="List View"
+              className={viewMode === 'list' ? 'bg-accent' : ''}
             >
-              {viewMode === 'list' ? (
-                <Calendar className="h-4 w-4" />
-              ) : (
-                <List className="h-4 w-4" />
-              )}
+              <List className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setViewMode('calendar')}
+              title="Calendar View"
+              className={viewMode === 'calendar' ? 'bg-accent' : ''}
+            >
+              <Calendar className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setViewMode('heatmap')}
+              title="Heatmap View"
+              className={viewMode === 'heatmap' ? 'bg-accent' : ''}
+            >
+              <LayoutGrid className="h-4 w-4" />
             </Button>
             <Link href="/allocations/add">
               <Button variant="default">+ Add New</Button>
@@ -179,8 +195,10 @@ export default function AllocationsPage({ user }: AllocationsPageProps) {
                 onItemsPerPageChange={handleItemsPerPageChange}
               />
             </>
-          ) : (
+          ) : viewMode === 'calendar' ? (
             <CalendarView allocations={allocations} />
+          ) : (
+            <HeatmapView allocations={allocations} />
           )}
         </CardContent>
       </Card>
