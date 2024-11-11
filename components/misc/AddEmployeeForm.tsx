@@ -1,19 +1,35 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from '@/utils/supabase/client';
-import { addEmployee, updateEmployee, getEmployee, getDepartments, addEmployeeDepartments, removeEmployeeDepartments } from '@/utils/supabase/queries';
-import { Employee, Department } from '@/utils/types';
+import { Employee, Department, Knowledge } from '@/utils/types';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { CustomCheckbox } from '@/components/ui/custom-checkbox';
 import { useTenant } from '@/utils/tenant-context';
 import { toast } from '@/components/ui/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronDown, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/utils/cn";
+import { 
+  addEmployee, 
+  updateEmployee, 
+  getEmployee, 
+  getDepartments, 
+  addEmployeeDepartments, 
+  removeEmployeeDepartments, 
+  getKnowledges, 
+  getEmployeeKnowledge,
+  addEmployeeKnowledge, 
+  removeEmployeeKnowledge 
+} from '@/utils/supabase/queries';
 
 interface FormattedDepartment extends Department {
   level: number;
@@ -40,6 +56,9 @@ export default function AddEmployeeForm({ employeeId }: { employeeId: string | n
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { currentTenant } = useTenant();
+  const [knowledges, setKnowledges] = useState<Knowledge[]>([]);
+  const [selectedKnowledges, setSelectedKnowledges] = useState<string[]>([]);
+  const [knowledgeSearchOpen, setKnowledgeSearchOpen] = useState(false);
 
   // Function to format departments into hierarchical structure
   const formatDepartmentsHierarchy = (
@@ -71,13 +90,19 @@ export default function AddEmployeeForm({ employeeId }: { employeeId: string | n
       if (!currentTenant) return;
 
       try {
-        const supabase = createClient();
+        const supabase: SupabaseClient = createClient();
 
         // Fetch departments
         const { departments: departmentsData } = await getDepartments(supabase, currentTenant.id);
         if (departmentsData) {
           const formattedDepts = formatDepartmentsHierarchy(departmentsData);
           setDepartments(formattedDepts);
+        }
+
+        // Fetch knowledges
+        const { knowledges: knowledgesData } = await getKnowledges(supabase, currentTenant.id);
+        if (knowledgesData) {
+          setKnowledges(knowledgesData);
         }
 
         // Fetch employee if editing
@@ -93,6 +118,12 @@ export default function AddEmployeeForm({ employeeId }: { employeeId: string | n
             
             if (employeeDepts) {
               setSelectedDepartments(employeeDepts.map(ed => ed.department_id));
+            }
+
+            // Fetch employee's knowledges
+            const employeeKnowledges = await getEmployeeKnowledge(supabase, employeeId);
+            if (employeeKnowledges) {
+              setSelectedKnowledges(employeeKnowledges.map(ek => ek.knowledge_id));
             }
           } else {
             toast({
@@ -148,6 +179,12 @@ export default function AddEmployeeForm({ employeeId }: { employeeId: string | n
         if (selectedDepartments.length > 0) {
           await addEmployeeDepartments(supabase, employeeId, selectedDepartments);
         }
+
+        // Update knowledges
+        await removeEmployeeKnowledge(supabase, employeeId);
+        if (selectedKnowledges.length > 0) {
+          await addEmployeeKnowledge(supabase, employeeId, selectedKnowledges);
+        }
       } else {
         const data = await addEmployee(supabase, employeeData);
         // Add departments for new employee
@@ -162,6 +199,24 @@ export default function AddEmployeeForm({ employeeId }: { employeeId: string | n
       console.error('Error saving employee:', error);
     }
   };
+
+  const handleKnowledgeSelect = (knowledgeId: string) => {
+    console.log('handleKnowledgeSelect selected', knowledgeId);
+    setSelectedKnowledges(current => {
+      if (current.includes(knowledgeId)) {
+        return current.filter(id => id !== knowledgeId);
+      }
+      return [...current, knowledgeId];
+    });
+  };
+
+  const removeKnowledge = (knowledgeId: string) => {
+    setSelectedKnowledges(current => current.filter(id => id !== knowledgeId));
+  };
+
+  useEffect(() => {
+    console.log('selectedKnowledges updated:', selectedKnowledges);
+  }, [selectedKnowledges]);
 
   if (!currentTenant) {
     return (
@@ -312,13 +367,85 @@ export default function AddEmployeeForm({ employeeId }: { employeeId: string | n
                       <SelectItem 
                         key={dept.id} 
                         value={dept.id}
-                        className={`pl-${dept.level * 4}`}
                       >
                         {dept.displayName}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="knowledges">Knowledges</Label>
+                <Popover open={knowledgeSearchOpen} onOpenChange={setKnowledgeSearchOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={knowledgeSearchOpen}
+                      className="w-full justify-between"
+                    >
+                      {selectedKnowledges.length === 0 
+                        ? "Select knowledges..." 
+                        : `${selectedKnowledges.length} selected`}
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search knowledges..." />
+                      <CommandEmpty>No knowledge found.</CommandEmpty>
+                      <CommandGroup className="max-h-64 overflow-auto">
+                        {knowledges.map((knowledge) => (
+                          <CommandItem
+                            key={knowledge.id}
+                            value={knowledge.title}
+                            onSelect={() => {
+                              console.log('onSelect', knowledge.id);
+                              handleKnowledgeSelect(knowledge.id);
+                            }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className={cn(
+                                "h-4 w-4 border rounded-sm flex items-center justify-center",
+                                selectedKnowledges.includes(knowledge.id) ? "bg-primary border-primary" : "border-input"
+                              )}>
+                                {selectedKnowledges.includes(knowledge.id) && 
+                                  <Check className="h-3 w-3 text-primary-foreground" />
+                                }
+                              </div>
+                              {knowledge.title}
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>                
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {selectedKnowledges.map((knowledgeId) => {
+                    const knowledge = knowledges.find(k => k.id === knowledgeId);
+                    return knowledge ? (
+                      <Badge
+                        key={knowledge.id}
+                        variant="secondary"
+                        className="flex items-center gap-1"
+                      >
+                        {knowledge.title}
+                        <button
+                          type="button"
+                          className="ml-1 hover:bg-muted rounded-full"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            removeKnowledge(knowledge.id);
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ) : null;
+                  })}
+                </div>
               </div>
 
               {error && <div className="text-red-500 bg-red-100 p-2 rounded">{error}</div>}

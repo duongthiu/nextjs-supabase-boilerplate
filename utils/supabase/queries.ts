@@ -1,13 +1,11 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { cache } from 'react';
-import { Employee } from '../types';
 
-export const getUser = cache(async (supabase: SupabaseClient) => {
+export const getUser = async (supabase: SupabaseClient) => {
   const {
     data: { user }
   } = await supabase.auth.getUser();
   return user;
-});
+};
 
 export async function getEmployees(
   supabase: SupabaseClient,
@@ -595,7 +593,7 @@ export async function updateKnowledge(supabase: SupabaseClient, knowledgeData: a
   return data;
 }
 
-export async function getEmployeeKnowledges(
+export async function getEmployeeKnowledge(
   supabase: SupabaseClient,
   employeeId: string
 ) {
@@ -618,15 +616,17 @@ export async function getEmployeeKnowledges(
 export async function addEmployeeKnowledge(
   supabase: SupabaseClient,
   employeeId: string,
-  knowledgeId: string
+  knowledgeIds: string[]
 ) {
   const { error } = await supabase
     .from('EmployeeKnowledges')
-    .insert([{
-      employee_id: employeeId,
-      knowledge_id: knowledgeId,
-      acquired_at: new Date().toISOString()
-    }]);
+    .insert(
+      knowledgeIds.map(knowledgeId => ({
+        employee_id: employeeId,
+        knowledge_id: knowledgeId,
+        acquired_at: new Date().toISOString()
+      }))
+    );
 
   if (error) {
     console.error('Error adding employee knowledge:', error);
@@ -637,13 +637,11 @@ export async function addEmployeeKnowledge(
 export async function removeEmployeeKnowledge(
   supabase: SupabaseClient,
   employeeId: string,
-  knowledgeId: string
 ) {
   const { error } = await supabase
     .from('EmployeeKnowledges')
     .delete()
-    .eq('employee_id', employeeId)
-    .eq('knowledge_id', knowledgeId);
+    .eq('employee_id', employeeId);
 
   if (error) {
     console.error('Error removing employee knowledge:', error);

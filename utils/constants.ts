@@ -1,5 +1,5 @@
-export const ITEMS_PER_PAGE_OPTIONS = [5, 20, 50, 100];
-export const DEFAULT_ITEMS_PER_PAGE = 5;
+export const ITEMS_PER_PAGE_OPTIONS = [10, 20, 50, 100];
+export const DEFAULT_ITEMS_PER_PAGE = 10;
 
 // Calendar view constants
 export const CALENDAR_SINGLE_ROW_LIMIT = 3;
