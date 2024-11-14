@@ -1,83 +1,171 @@
-# Next.js Supabase Boilerplate
+# Next.js Supabase Resource Management System
 
-Thanks for checking out this repository! This project is a fork from the original [MVP Boilerplate](https://github.com/devtodollars/mvp-boilerplate).
-
-## Purpose
-
-This Next.js Supabase boilerplate provides a solid foundation for building scalable web applications.
-
-Demo: [https://nextjs-supabase-boilerplate-gamma.vercel.app/landing](https://nextjs-supabase-boilerplate-gamma.vercel.app/landing)
-
-## Tech Stack
-
-- **Next.js**: A React framework for building server-rendered applications with ease.
-- **Supabase**: An open-source Firebase alternative that provides a backend as a service, including authentication, database, and storage.
-- **TypeScript**: A superset of JavaScript that adds static types, enhancing code quality and maintainability.
-- **Tailwind CSS**: A utility-first CSS framework for creating custom designs without leaving your HTML.
+A comprehensive resource management system built with Next.js and Supabase, featuring employee allocation tracking, project management, and skill tracking.
 
 ## Features
 
+### Core Functionality
 - 🔐 Authentication with Supabase
-- 📱 Responsive layout with Tailwind CSS
-- 🏗️ Type-safe database operations
-- 🚀 Server-side rendering with Next.js
-- ⚡ API routes for backend functionality
+- 👥 Multi-tenant support
+- 🌓 Light/Dark mode
+- 📱 Responsive design
 
-## Getting Started
+### Resource Management
+1. **Employee Management**
+   - Basic employee information
+   - Department assignments
+   - Knowledge/Skills tracking
+   - Active/Inactive status
 
-1. [Install node](https://nodejs.org/en/download)
-2. Clone and setup the project:
+2. **Department Management**
+   - Hierarchical department structure
+   - Department-specific knowledge requirements
+   - Employee assignments
 
-```bash
-git clone https://github.com/phamvuhoang/nextjs-supabase-boilerplate.git
-cd nextjs-supabase-boilerplate
-```
+3. **Client Management**
+   - Client information tracking
+   - Client code management
+   - Address and location tracking
 
-3. Set up environment variables:
+4. **Project Management**
+   - Project details and status
+   - Client association
+   - Required knowledge/skills
+   - Project timeline tracking
 
-```bash
-cp .env.example .env
-```
+5. **Knowledge/Skills Management**
+   - Skill definition and tracking
+   - Employee skill assignments
+   - Project skill requirements
 
-4. Install dependencies and start development:
+6. **Resource Allocation**
+   - Employee project assignments
+   - Allocation percentage tracking
+   - Multiple view options:
+     - List view with pagination
+     - Calendar view with daily allocations
+     - Heatmap view for workload visualization
+   - Workload monitoring and overallocation detection
 
-```bash
-npm install
-npm run dev
-```
+## Tech Stack
 
-Default login credentials:
-- Email: admin@test.com
-- Password: Aa123456@
-
-5. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-6. **Optional: Set Up Supabase Database**:
-   - Navigate to your Supabase project dashboard
-   - Go to the SQL editor
-   - Upload and run the `schema.sql` file to create the necessary tables
+- **Frontend**: Next.js 14 (App Router), React, TypeScript
+- **Backend**: Supabase (PostgreSQL)
+- **Styling**: Tailwind CSS, shadcn/ui
+- **State Management**: React Context
+- **Authentication**: Supabase Auth
+- **Database**: PostgreSQL (via Supabase)
 
 ## Project Structure
 
 ```
 ├── app/                    # Next.js app directory
-│   ├── api/               # API routes
-│   ├── account/           # Account management pages
-│   └── ...               # Other pages
-├── components/            # Reusable React components
+│   ├── (auth)/            # Authentication pages
+│   ├── account/           # Account management
+│   ├── employees/         # Employee management
+│   ├── departments/       # Department management
+│   ├── clients/          # Client management
+│   ├── projects/         # Project management
+│   └── allocations/      # Resource allocation
+├── components/
 │   ├── landing/          # Landing page components
-│   └── layout/           # Layout components
-├── utils/                 # Utility functions
-│   └── supabase/         # Supabase related utilities
-├── types/                 # TypeScript type definitions
+│   ├── layout/           # Layout components
+│   ├── misc/             # Feature-specific components
+│   └── ui/               # Reusable UI components
+├── utils/
+│   ├── supabase/         # Supabase utilities
+│   └── types.ts          # TypeScript definitions
 └── public/               # Static assets
 ```
+
+## Getting Started
+
+1. **Prerequisites**
+   - Node.js 18+ installed
+   - Supabase account
+   - Git
+
+2. **Clone and Setup**
+   ```bash
+   git clone https://github.com/phamvuhoang/nextjs-supabase-boilerplate.git
+   cd nextjs-supabase-boilerplate
+   npm install
+   ```
+
+3. **Supabase Setup**
+   - Create a new Supabase project
+   - Copy your project URL and anon key
+   - Create `.env.local`:
+     ```
+     NEXT_PUBLIC_SUPABASE_URL=your-project-url
+     NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+     ```
+
+4. **Database Setup**
+   - Go to Supabase SQL Editor
+   - Copy contents of `schema.sql`
+   - Run the SQL to create all tables
+   - Initial tables:
+     - Tenants
+     - UserTenants
+     - Employees
+     - Departments
+     - EmployeeDepartments
+     - Clients
+     - Projects
+     - Knowledges
+     - EmployeeKnowledges
+     - ProjectKnowledges
+     - Allocations
+
+5. **Run Development Server**
+   ```bash
+   npm run dev
+   ```
+
+6. **Default Login**
+   - Email: admin@test.com
+   - Password: Aa123456@
+
+## Database Schema
+
+### Key Tables
+1. **Tenants**: Multi-tenant support
+   - id, name, subdomain, plan
+
+2. **Employees**: Employee information
+   - id, name, email, department, skills
+
+3. **Departments**: Organizational structure
+   - id, name, parent_department_id
+
+4. **Projects**: Project tracking
+   - id, name, client, status, timeline
+
+5. **Allocations**: Resource assignments
+   - id, employee_id, project_id, percentage
+
+6. **Knowledges**: Skills tracking
+   - id, title, description
+
+See `schema.sql` for complete database structure.
 
 ## Environment Variables
 
 Required environment variables:
-
 ```
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 ```
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## License
+
+This project is licensed under the MIT License.
