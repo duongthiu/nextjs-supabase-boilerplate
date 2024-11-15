@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createClient } from '@/utils/supabase/client';
-import { getClients, addProject, getProject, updateProject, searchClients, getKnowledges, getProjectKnowledges, addProjectKnowledge, removeProjectKnowledge } from '@/utils/supabase/queries';
+import { getClients, addProject, getProject, updateProject, searchClients, getKnowledges, getProjectKnowledges, addProjectKnowledge, removeProjectKnowledge, getEmployees, getEmployeeSuggestions } from '@/utils/supabase/queries';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Autocomplete } from '@/components/ui/autocomplete';
 import { CustomCheckbox } from '@/components/ui/custom-checkbox';
@@ -18,6 +18,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Check, ChevronDown, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/utils/cn";
+import { format, startOfWeek, endOfWeek, addWeeks, eachDayOfInterval, isSameMonth } from 'date-fns';
+import { Switch } from "@/components/ui/switch";
 
 interface FormData {
   code: string;
@@ -57,6 +59,25 @@ interface Knowledge {
   title: string;
 }
 
+interface TimeSlot {
+  start: Date;
+  end: Date;
+  allocation: number;
+}
+
+interface EmployeeSuggestion {
+  id: string;
+  given_name: string;
+  surname: string;
+  matching_skills: number;
+  Allocations: {
+    allocation_percentage: number;
+    start_date: string;
+    end_date: string;
+  }[];
+  knowledges: string[];
+}
+
 export default function AddProjectForm({ projectId }: { projectId: string | null }) {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [error, setError] = useState<string | null>(null);
@@ -69,6 +90,8 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
   const [knowledges, setKnowledges] = useState<Knowledge[]>([]);
   const [selectedKnowledges, setSelectedKnowledges] = useState<string[]>([]);
   const [knowledgeSearchOpen, setKnowledgeSearchOpen] = useState(false);
+  const [employeeSuggestions, setEmployeeSuggestions] = useState<EmployeeSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -225,12 +248,376 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
     setSelectedKnowledges(current => current.filter(id => id !== knowledgeId));
   };
 
+  // Helper function to get overlapping time slots
+  const getOverlappingTimeSlots = (allocations: any[]): TimeSlot[] => {
+    if (allocations.length === 0) return [];
+
+    // Sort all start and end dates
+    const events: Array<{ date: Date; isStart: boolean; allocation: number }> = [];
+    allocations.forEach(alloc => {
+      events.push({ 
+        date: new Date(alloc.start_date), 
+        isStart: true, 
+        allocation: alloc.allocation_percentage 
+      });
+      events.push({ 
+        date: new Date(alloc.end_date), 
+        isStart: false, 
+        allocation: alloc.allocation_percentage 
+      });
+    });
+
+    events.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    const timeSlots: TimeSlot[] = [];
+    let currentAllocation = 0;
+    let lastDate: Date | null = null;
+
+    events.forEach((event, index) => {
+      if (lastDate && currentAllocation > 0) {
+        timeSlots.push({
+          start: lastDate,
+          end: event.date,
+          allocation: currentAllocation
+        });
+      }
+
+      if (event.isStart) {
+        currentAllocation += event.allocation;
+      } else {
+        currentAllocation -= event.allocation;
+      }
+      
+      lastDate = event.date;
+    });
+
+    return timeSlots;
+  };
+
+  // Function to calculate available allocation for a given period
+  const getAvailableAllocation = (
+    timeSlots: TimeSlot[],
+    start: Date,
+    end: Date
+  ): { 
+    periods: Array<{ start: Date; end: Date; maxAllocation: number }> 
+  } => {
+    const periods: Array<{ start: Date; end: Date; maxAllocation: number }> = [];
+    let currentDate = new Date(start);
+
+    while (currentDate < end) {
+      const overlappingSlots = timeSlots.filter(slot => 
+        slot.start <= currentDate && slot.end >= currentDate
+      );
+
+      const currentAllocation = overlappingSlots.reduce(
+        (sum, slot) => sum + slot.allocation, 
+        0
+      );
+
+      const nextChange = overlappingSlots.length > 0
+        ? Math.min(
+            ...overlappingSlots.map(slot => slot.end.getTime()),
+            end.getTime()
+          )
+        : end.getTime();
+
+      periods.push({
+        start: new Date(currentDate),
+        end: new Date(nextChange),
+        maxAllocation: Math.max(0, 100 - currentAllocation)
+      });
+
+      currentDate = new Date(nextChange);
+    }
+
+    return { periods };
+  };
+
+  const updateEmployeeSuggestions = useCallback(async () => {
+    if (!currentTenant || selectedKnowledges.length === 0 || !formData.start_date || !formData.end_date) {
+      setEmployeeSuggestions([]);
+      return;
+    }
+
+    try {
+      const supabase = createClient();
+      const employees = await getEmployeeSuggestions(supabase, currentTenant.id, selectedKnowledges);
+
+      // Map directly to EmployeeSuggestion type
+      const suggestions = employees.map(employee => ({
+        id: employee.id,
+        given_name: employee.given_name,
+        surname: employee.surname,
+        matching_skills: employee.EmployeeKnowledges.length,
+        Allocations: employee.Allocations || [],
+        knowledges: employee.EmployeeKnowledges.map((ek: any) => ek.knowledge_id)
+      }));
+
+      // Sort by matching skills
+      const sortedSuggestions = suggestions.sort((a, b) => b.matching_skills - a.matching_skills);
+
+      setEmployeeSuggestions(sortedSuggestions);
+    } catch (error) {
+      console.error('Error updating employee suggestions:', error);
+    }
+  }, [currentTenant, selectedKnowledges, formData.start_date, formData.end_date]);
+
+  // Update suggestions when knowledges change
+  useEffect(() => {
+    updateEmployeeSuggestions();
+  }, [selectedKnowledges, updateEmployeeSuggestions]);
+
+  // Update the EmployeeSuggestions component
+  const EmployeeSuggestions = () => {
+    // Generate weeks array for the entire project duration
+    const weeksArray = useMemo(() => {
+      if (!formData.start_date || !formData.end_date) return [];
+
+      const result = [];
+      const projectStart = new Date(formData.start_date);
+      const projectEnd = new Date(formData.end_date);
+      const today = new Date();
+
+      // Start from the project start date
+      let currentDate = startOfWeek(projectStart);
+      
+      // Calculate weeks until project end
+      while (currentDate <= projectEnd) {
+        const weekEnd = endOfWeek(currentDate);
+        result.push({
+          start: currentDate,
+          end: weekEnd,
+          days: eachDayOfInterval({ start: currentDate, end: weekEnd })
+        });
+        currentDate = addWeeks(currentDate, 1);
+      }
+
+      return result;
+    }, [formData.start_date, formData.end_date]);
+
+    // Calculate initial scroll position based on relevant week
+    useEffect(() => {
+      if (weeksArray.length > 0) {
+        const scrollContainer = document.querySelector('.employee-workload-scroll');
+        if (scrollContainer) {
+          const today = new Date();
+          const projectStart = new Date(formData.start_date);
+          const projectEnd = new Date(formData.end_date);
+          
+          // Determine which week to focus on
+          let targetDate;
+          if (projectStart > today) {
+            targetDate = projectStart;
+          } else if (projectEnd < today) {
+            targetDate = projectEnd;
+          } else {
+            targetDate = today;
+          }
+
+          // Find the index of the target week
+          const targetWeekIndex = weeksArray.findIndex(week => 
+            targetDate >= week.start && targetDate <= week.end
+          );
+
+          if (targetWeekIndex !== -1) {
+            const weekWidth = 32; // w-8 = 2rem = 32px
+            const scrollPosition = Math.max(0, (weekWidth * targetWeekIndex) - (scrollContainer.clientWidth / 2));
+            requestAnimationFrame(() => {
+              scrollContainer.scrollLeft = scrollPosition;
+            });
+          }
+        }
+      }
+    }, [weeksArray, formData.start_date, formData.end_date]);
+
+    // Calculate workload for each employee per week
+    const employeeWorkload = useMemo(() => {
+      const workload: Record<string, Record<string, number>> = {};
+
+      employeeSuggestions.forEach(employee => {
+        workload[employee.id] = {};
+
+        weeksArray.forEach(week => {
+          const weekKey = format(week.start, 'yyyy-MM-dd');
+          
+          employee.Allocations.forEach(allocation => {
+            const allocationStart = new Date(allocation.start_date);
+            const allocationEnd = new Date(allocation.end_date);
+
+            // Check if allocation overlaps with this week
+            if (allocationStart <= week.end && allocationEnd >= week.start) {
+              workload[employee.id][weekKey] = (workload[employee.id][weekKey] || 0) + 
+                allocation.allocation_percentage;
+            }
+          });
+        });
+      });
+
+      return workload;
+    }, [employeeSuggestions, weeksArray]);
+
+    const getCellColor = (workload: number) => {
+      if (workload === 0) return 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400';
+      if (workload <= 50) return 'bg-green-200 dark:bg-green-900/50 text-green-900 dark:text-green-100';
+      if (workload <= 80) return 'bg-yellow-200 dark:bg-yellow-900/50 text-yellow-900 dark:text-yellow-100';
+      if (workload <= 100) return 'bg-orange-200 dark:bg-orange-900/50 text-orange-900 dark:text-orange-100';
+      return 'bg-red-200 dark:bg-red-900/50 text-red-900 dark:text-red-100';
+    };
+
+    return (
+      <div className="mt-4">
+        <div className="flex items-center space-x-2 mb-4">
+          <Switch
+            id="show-suggestions"
+            checked={showSuggestions}
+            onCheckedChange={setShowSuggestions}
+          />
+          <Label htmlFor="show-suggestions">Show Employee Suggestions</Label>
+        </div>
+
+        {showSuggestions && selectedKnowledges.length > 0 && formData.start_date && formData.end_date && (
+          <div className="space-y-4">
+            {employeeSuggestions.length > 0 ? (
+              employeeSuggestions.map((employee) => (
+                <div
+                  key={employee.id}
+                  className="p-3 border rounded-lg hover:bg-muted/50 space-y-2"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">
+                        {employee.given_name} {employee.surname}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Matching skills: {employee.matching_skills}/{selectedKnowledges.length}
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        router.push(`/allocations/add?project_id=${projectId}&employee_id=${employee.id}`);
+                      }}
+                    >
+                      Add Allocation
+                    </Button>
+                  </div>
+
+                  {/* Scrollable Heatmap Container */}
+                  <div className="rounded border bg-muted/50 p-2">
+                    <div className="flex items-center gap-1">
+                      <div className="shrink-0 w-20 text-sm font-medium">Workload</div>
+                      <div className="relative w-[calc(100%-5rem)]">
+                        <div 
+                          className="employee-workload-scroll overflow-x-auto scrollbar-thin scrollbar-thumb-zinc-400 dark:scrollbar-thumb-zinc-600 scrollbar-track-transparent"
+                          style={{ scrollBehavior: 'smooth' }}
+                        >
+                          <div style={{ 
+                            width: `${weeksArray.length * 32}px`,
+                            minWidth: '100%'
+                          }}>
+                            {/* Week dates header */}
+                            <div className="flex border-b dark:border-zinc-700 pb-2">
+                              {weeksArray.map((week, index) => (
+                                <div 
+                                  key={index}
+                                  className={cn(
+                                    "w-8 shrink-0 text-center text-xs",
+                                    isSameMonth(week.start, new Date()) 
+                                      ? "text-blue-600 dark:text-blue-400" 
+                                      : "text-muted-foreground"
+                                  )}
+                                  title={format(week.start, 'MMM d, yyyy')}
+                                >
+                                  {format(week.start, 'MMM d')}
+                                </div>
+                              ))}
+                            </div>
+                            
+                            {/* Workload heatmap */}
+                            <div className="flex pt-2">
+                              {weeksArray.map((week, index) => {
+                                const weekKey = format(week.start, 'yyyy-MM-dd');
+                                const workload = employeeWorkload[employee.id][weekKey] || 0;
+                                return (
+                                  <div
+                                    key={index}
+                                    className={cn(
+                                      "w-8 h-8 shrink-0 flex items-center justify-center text-xs rounded",
+                                      getCellColor(workload),
+                                      isSameMonth(week.start, new Date()) 
+                                        ? "ring-1 ring-blue-500/20" 
+                                        : ""
+                                    )}
+                                    title={`Week of ${format(week.start, 'MMM d')}: ${workload}%`}
+                                  >
+                                    {workload > 0 && workload}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Gradient overlays */}
+                        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-muted/50 to-transparent pointer-events-none" />
+                        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-muted/50 to-transparent pointer-events-none" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-muted-foreground text-center py-4">
+                No employees found with matching skills
+              </div>
+            )}
+
+            {/* Legend */}
+            <div className="mt-4 flex flex-wrap items-center gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <div className={cn(
+                  "w-4 h-4 rounded",
+                  "bg-green-200 dark:bg-green-900/50"
+                )}></div>
+                <span>≤ 50%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className={cn(
+                  "w-4 h-4 rounded",
+                  "bg-yellow-200 dark:bg-yellow-900/50"
+                )}></div>
+                <span>51-80%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className={cn(
+                  "w-4 h-4 rounded",
+                  "bg-orange-200 dark:bg-orange-900/50"
+                )}></div>
+                <span>81-100%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className={cn(
+                  "w-4 h-4 rounded",
+                  "bg-red-200 dark:bg-red-900/50"
+                )}></div>
+                <span>&gt; 100%</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
 
   return (
-    <div className="container mx-auto">
+    <div className="container mx-auto max-w-4xl">
       <main className="flex-1 p-8">
         <Card>
           <CardHeader>
@@ -446,6 +833,16 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
           </CardContent>
         </Card>
       </main>
+      <div className="p-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Employee Suggestions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <EmployeeSuggestions />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
