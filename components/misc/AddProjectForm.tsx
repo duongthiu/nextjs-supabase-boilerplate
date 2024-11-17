@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createClient } from '@/utils/supabase/client';
-import { getClients, addProject, getProject, updateProject, searchClients, getKnowledges, getProjectKnowledges, addProjectKnowledge, removeProjectKnowledge, getEmployees, getEmployeeSuggestions } from '@/utils/supabase/queries';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Autocomplete } from '@/components/ui/autocomplete';
 import { CustomCheckbox } from '@/components/ui/custom-checkbox';
@@ -20,6 +19,18 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/utils/cn";
 import { format, startOfWeek, endOfWeek, addWeeks, eachDayOfInterval, isSameMonth } from 'date-fns';
 import { Switch } from "@/components/ui/switch";
+import { 
+  getClients, 
+  addProject, 
+  getProject, 
+  updateProject, 
+  searchClients, 
+  getKnowledges, 
+  getProjectKnowledges, 
+  addProjectKnowledge, 
+  removeProjectKnowledge, 
+  getEmployeeSuggestions 
+} from '@/utils/supabase/queries';
 
 interface FormData {
   code: string;
@@ -208,6 +219,7 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
     if (!isSearchMode) {
       return (
         <Select 
+          key="select-mode"
           value={formData.client_id}
           onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value }))}
         >
@@ -227,6 +239,7 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
 
     return (
       <Autocomplete
+        key="search-mode"
         options={clients}
         value={formData.client_id}
         onChange={(value) => setFormData(prev => ({ ...prev, client_id: value }))}
@@ -396,37 +409,39 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
       return result;
     }, [formData.start_date, formData.end_date]);
 
-    // Calculate initial scroll position based on relevant week
+    // Calculate initial scroll position once for all employees
     useEffect(() => {
       if (weeksArray.length > 0) {
-        const scrollContainer = document.querySelector('.employee-workload-scroll');
-        if (scrollContainer) {
-          const today = new Date();
-          const projectStart = new Date(formData.start_date);
-          const projectEnd = new Date(formData.end_date);
-          
-          // Determine which week to focus on
-          let targetDate;
-          if (projectStart > today) {
-            targetDate = projectStart;
-          } else if (projectEnd < today) {
-            targetDate = projectEnd;
-          } else {
-            targetDate = today;
-          }
+        const scrollContainers = document.querySelectorAll('.employee-workload-scroll');
+        if (scrollContainers.length === 0) return;
 
-          // Find the index of the target week
-          const targetWeekIndex = weeksArray.findIndex(week => 
-            targetDate >= week.start && targetDate <= week.end
-          );
+        const today = new Date();
+        const projectStart = new Date(formData.start_date);
+        const projectEnd = new Date(formData.end_date);
+        
+        // Determine which week to focus on
+        let targetDate;
+        if (projectStart > today) {
+          targetDate = projectStart;
+        } else if (projectEnd < today) {
+          targetDate = projectEnd;
+        } else {
+          targetDate = today;
+        }
 
-          if (targetWeekIndex !== -1) {
-            const weekWidth = 32; // w-8 = 2rem = 32px
-            const scrollPosition = Math.max(0, (weekWidth * targetWeekIndex) - (scrollContainer.clientWidth / 2));
+        // Find the index of the target week
+        const targetWeekIndex = weeksArray.findIndex(week => 
+          targetDate >= week.start && targetDate <= week.end
+        );
+
+        if (targetWeekIndex !== -1) {
+          const weekWidth = 32; // w-8 = 2rem = 32px
+          scrollContainers.forEach(container => {
+            const scrollPosition = Math.max(0, (weekWidth * targetWeekIndex) - (container.clientWidth / 2));
             requestAnimationFrame(() => {
-              scrollContainer.scrollLeft = scrollPosition;
+              container.scrollLeft = scrollPosition;
             });
-          }
+          });
         }
       }
     }, [weeksArray, formData.start_date, formData.end_date]);
