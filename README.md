@@ -118,12 +118,23 @@ A comprehensive resource management system built with Next.js and Supabase, feat
      - ProjectKnowledges
      - Allocations
 
-5. **Run Development Server**
+5. **User Setup for Login**
+   - In the Supabase dashboard, navigate to the "Authentication" section.
+   - Create a new **Auto-created User** with the following credentials:
+     - Email: `admin@test.com`
+     - Password: `Aa123456@`
+   - **Auto-created User**: Supabase will automatically create a user for you upon registration.
+   - **Add a Record to Tenants Table**:
+     - Insert a new tenant record with the necessary details (e.g., name, subdomain, plan).
+   - **Add a Record to UserTenants Table**:
+     - Link the created user to the tenant by adding a record in the UserTenants table, associating the user ID with the tenant ID.
+
+6. **Run Development Server**
    ```bash
    npm run dev
    ```
 
-6. **Default Login**
+7. **Default Login**
    - Email: admin@test.com
    - Password: Aa123456@
 
