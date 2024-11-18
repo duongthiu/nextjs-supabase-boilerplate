@@ -123,7 +123,6 @@ A comprehensive resource management system built with Next.js and Supabase, feat
    - Create a new **Auto-created User** with the following credentials:
      - Email: `admin@test.com`
      - Password: `Aa123456@`
-   - **Auto-created User**: Supabase will automatically create a user for you upon registration.
    - **Add a Record to Tenants Table**:
      - Insert a new tenant record with the necessary details (e.g., name, subdomain, plan).
    - **Add a Record to UserTenants Table**:
