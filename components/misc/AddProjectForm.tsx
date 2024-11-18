@@ -19,17 +19,19 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/utils/cn";
 import { format, startOfWeek, endOfWeek, addWeeks, eachDayOfInterval, isSameMonth } from 'date-fns';
 import { Switch } from "@/components/ui/switch";
+import { toast } from "@/components/ui/use-toast";
 import { 
   getClients, 
   addProject, 
   getProject, 
   updateProject, 
-  searchClients, 
   getKnowledges, 
   getProjectKnowledges, 
   addProjectKnowledge, 
   removeProjectKnowledge, 
-  getEmployeeSuggestions 
+  getEmployeeSuggestions,
+  updateAllocation,
+  addAllocation
 } from '@/utils/supabase/queries';
 
 interface FormData {
@@ -89,6 +91,31 @@ interface EmployeeSuggestion {
   knowledges: string[];
 }
 
+interface AllocatedEmployee {
+  id: string;
+  given_name: string;
+  surname: string;
+  Allocations: {
+    allocation_percentage: number;
+    start_date: string;
+    end_date: string;
+  }[];
+}
+
+interface AllocationFormData {
+  start_date: string;
+  end_date: string;
+  allocation_percentage: string;
+}
+
+const getCellColor = (workload: number) => {
+  if (workload === 0) return 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400';
+  if (workload <= 50) return 'bg-green-200 dark:bg-green-900/50 text-green-900 dark:text-green-100';
+  if (workload <= 80) return 'bg-yellow-200 dark:bg-yellow-900/50 text-yellow-900 dark:text-yellow-100';
+  if (workload <= 100) return 'bg-orange-200 dark:bg-orange-900/50 text-orange-900 dark:text-orange-100';
+  return 'bg-red-200 dark:bg-red-900/50 text-red-900 dark:text-red-100';
+};
+
 export default function AddProjectForm({ projectId }: { projectId: string | null }) {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [error, setError] = useState<string | null>(null);
@@ -103,6 +130,14 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
   const [knowledgeSearchOpen, setKnowledgeSearchOpen] = useState(false);
   const [employeeSuggestions, setEmployeeSuggestions] = useState<EmployeeSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [allocatedEmployees, setAllocatedEmployees] = useState<AllocatedEmployee[]>([]);
+  const [editingAllocationId, setEditingAllocationId] = useState<string | null>(null);
+  const [addingAllocationForEmployee, setAddingAllocationForEmployee] = useState<string | null>(null);
+  const [allocationFormData, setAllocationFormData] = useState<AllocationFormData>({
+    start_date: '',
+    end_date: '',
+    allocation_percentage: '',
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -153,6 +188,37 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
     };
 
     fetchData();
+  }, [projectId, currentTenant]);
+
+  useEffect(() => {
+    const fetchAllocatedEmployees = async () => {
+      if (!projectId || !currentTenant) return;
+      
+      try {
+        const { data: employees } = await supabase
+          .from('Employees')
+          .select(`
+            id,
+            given_name,
+            surname,
+            Allocations!inner (
+              allocation_percentage,
+              start_date,
+              end_date
+            )
+          `)
+          .eq('tenant_id', currentTenant.id)
+          .eq('Allocations.project_id', projectId);
+
+        if (employees) {
+          setAllocatedEmployees(employees);
+        }
+      } catch (error) {
+        console.error('Error fetching allocated employees:', error);
+      }
+    };
+
+    fetchAllocatedEmployees();
   }, [projectId, currentTenant]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -472,14 +538,6 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
       return workload;
     }, [employeeSuggestions, weeksArray]);
 
-    const getCellColor = (workload: number) => {
-      if (workload === 0) return 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400';
-      if (workload <= 50) return 'bg-green-200 dark:bg-green-900/50 text-green-900 dark:text-green-100';
-      if (workload <= 80) return 'bg-yellow-200 dark:bg-yellow-900/50 text-yellow-900 dark:text-yellow-100';
-      if (workload <= 100) return 'bg-orange-200 dark:bg-orange-900/50 text-orange-900 dark:text-orange-100';
-      return 'bg-red-200 dark:bg-red-900/50 text-red-900 dark:text-red-100';
-    };
-
     return (
       <div className="mt-4">
         <div className="flex items-center space-x-2 mb-4">
@@ -513,12 +571,34 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        router.push(`/allocations/add?project_id=${projectId}&employee_id=${employee.id}`);
+                        if (addingAllocationForEmployee === employee.id) {
+                          setAddingAllocationForEmployee(null);
+                          setAllocationFormData({
+                            start_date: '',
+                            end_date: '',
+                            allocation_percentage: '',
+                          });
+                        } else {
+                          setAddingAllocationForEmployee(employee.id);
+                          // Pre-fill with project dates
+                          setAllocationFormData({
+                            start_date: formData.start_date,
+                            end_date: formData.end_date,
+                            allocation_percentage: '',
+                          });
+                        }
                       }}
                     >
-                      Add Allocation
+                      {addingAllocationForEmployee === employee.id ? 'Cancel' : 'Add Allocation'}
                     </Button>
                   </div>
+
+                  {addingAllocationForEmployee === employee.id && (
+                    <AllocationForm 
+                      employeeId={employee.id}
+                      isEdit={false}
+                    />
+                  )}
 
                   {/* Scrollable Heatmap Container */}
                   <div className="rounded border bg-muted/50 p-2">
@@ -623,6 +703,368 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
             </div>
           </div>
         )}
+      </div>
+    );
+  };
+
+  const AllocatedEmployees = () => {
+    // Reuse the same weeksArray and scroll logic from EmployeeSuggestions
+    const weeksArray = useMemo(() => {
+      if (!formData.start_date || !formData.end_date) return [];
+
+      const result = [];
+      const projectStart = new Date(formData.start_date);
+      const projectEnd = new Date(formData.end_date);
+      const today = new Date();
+
+      // Start from the project start date
+      let currentDate = startOfWeek(projectStart);
+      
+      // Calculate weeks until project end
+      while (currentDate <= projectEnd) {
+        const weekEnd = endOfWeek(currentDate);
+        result.push({
+          start: currentDate,
+          end: weekEnd,
+          days: eachDayOfInterval({ start: currentDate, end: weekEnd })
+        });
+        currentDate = addWeeks(currentDate, 1);
+      }
+
+      return result;
+    }, [formData.start_date, formData.end_date]);
+
+    // Reuse the same scroll effect
+    useEffect(() => {
+      if (weeksArray.length > 0) {
+        const scrollContainers = document.querySelectorAll('.allocated-workload-scroll');
+        if (scrollContainers.length === 0) return;
+
+        const today = new Date();
+        const projectStart = new Date(formData.start_date);
+        const projectEnd = new Date(formData.end_date);
+        
+        let targetDate;
+        if (projectStart > today) {
+          targetDate = projectStart;
+        } else if (projectEnd < today) {
+          targetDate = projectEnd;
+        } else {
+          targetDate = today;
+        }
+
+        const targetWeekIndex = weeksArray.findIndex(week => 
+          targetDate >= week.start && targetDate <= week.end
+        );
+
+        if (targetWeekIndex !== -1) {
+          const weekWidth = 32;
+          scrollContainers.forEach(container => {
+            const scrollPosition = Math.max(0, (weekWidth * targetWeekIndex) - (container.clientWidth / 2));
+            requestAnimationFrame(() => {
+              container.scrollLeft = scrollPosition;
+            });
+          });
+        }
+      }
+    }, [weeksArray, formData.start_date, formData.end_date]);
+
+    // Calculate workload for allocated employees
+    const employeeWorkload = useMemo(() => {
+      const workload: Record<string, Record<string, number>> = {};
+
+      allocatedEmployees.forEach(employee => {
+        workload[employee.id] = {};
+
+        weeksArray.forEach(week => {
+          const weekKey = format(week.start, 'yyyy-MM-dd');
+          
+          employee.Allocations.forEach(allocation => {
+            const allocationStart = new Date(allocation.start_date);
+            const allocationEnd = new Date(allocation.end_date);
+
+            if (allocationStart <= week.end && allocationEnd >= week.start) {
+              workload[employee.id][weekKey] = (workload[employee.id][weekKey] || 0) + 
+                allocation.allocation_percentage;
+            }
+          });
+        });
+      });
+
+      return workload;
+    }, [allocatedEmployees, weeksArray]);
+
+    return (
+      <div className="space-y-4">
+        {allocatedEmployees.length > 0 ? (
+          allocatedEmployees.map((employee) => (
+            <div
+              key={employee.id}
+              className="p-3 border rounded-lg hover:bg-muted/50 space-y-2"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium">
+                    {employee.given_name} {employee.surname}
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (editingAllocationId === employee.id) {
+                      setEditingAllocationId(null);
+                      setAllocationFormData({
+                        start_date: '',
+                        end_date: '',
+                        allocation_percentage: '',
+                      });
+                    } else {
+                      setEditingAllocationId(employee.id);
+                      const allocation = employee.Allocations[0];
+                      setAllocationFormData({
+                        start_date: allocation.start_date.split('T')[0],
+                        end_date: allocation.end_date.split('T')[0],
+                        allocation_percentage: allocation.allocation_percentage.toString(),
+                      });
+                    }
+                  }}
+                >
+                  {editingAllocationId === employee.id ? 'Cancel Edit' : 'Edit Allocation'}
+                </Button>
+              </div>
+
+              {editingAllocationId === employee.id && (
+                <AllocationForm 
+                  employeeId={employee.id} 
+                  isEdit={true}
+                  currentAllocation={employee.Allocations[0]}
+                />
+              )}
+
+              {/* Scrollable Heatmap Container */}
+              <div className="rounded border bg-muted/50 p-2">
+                <div className="flex items-center gap-1">
+                  <div className="shrink-0 w-20 text-sm font-medium">Workload</div>
+                  <div className="relative w-[calc(100%-5rem)]">
+                    <div 
+                      className="allocated-workload-scroll overflow-x-auto scrollbar-thin scrollbar-thumb-zinc-400 dark:scrollbar-thumb-zinc-600 scrollbar-track-transparent"
+                      style={{ scrollBehavior: 'smooth' }}
+                    >
+                      <div style={{ 
+                        width: `${weeksArray.length * 32}px`,
+                        minWidth: '100%'
+                      }}>
+                        {/* Week dates header */}
+                        <div className="flex border-b dark:border-zinc-700 pb-2">
+                          {weeksArray.map((week, index) => (
+                            <div 
+                              key={index}
+                              className={cn(
+                                "w-8 shrink-0 text-center text-xs",
+                                isSameMonth(week.start, new Date()) 
+                                  ? "text-blue-600 dark:text-blue-400" 
+                                  : "text-muted-foreground"
+                              )}
+                              title={format(week.start, 'MMM d, yyyy')}
+                            >
+                              {format(week.start, 'MMM d')}
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {/* Workload heatmap */}
+                        <div className="flex pt-2">
+                          {weeksArray.map((week, index) => {
+                            const weekKey = format(week.start, 'yyyy-MM-dd');
+                            const workload = employeeWorkload[employee.id][weekKey] || 0;
+                            return (
+                              <div
+                                key={index}
+                                className={cn(
+                                  "w-8 h-8 shrink-0 flex items-center justify-center text-xs rounded",
+                                  getCellColor(workload),
+                                  isSameMonth(week.start, new Date()) 
+                                    ? "ring-1 ring-blue-500/20" 
+                                    : ""
+                                )}
+                                title={`Week of ${format(week.start, 'MMM d')}: ${workload}%`}
+                              >
+                                {workload > 0 && workload}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-muted/50 to-transparent pointer-events-none" />
+                    <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-muted/50 to-transparent pointer-events-none" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-muted-foreground text-center py-4">
+            No allocated employees
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const handleAllocationSubmit = async (employeeId: string, isEdit: boolean) => {
+    if (!currentTenant || !projectId) return;
+
+    const percentage = parseFloat(allocationFormData.allocation_percentage);
+    if (isNaN(percentage) || percentage <= 0 || percentage > 100) {
+      toast({
+        title: "Error",
+        description: "Allocation percentage must be between 0 and 100.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const allocationData = {
+        employee_id: employeeId,
+        project_id: projectId,
+        start_date: allocationFormData.start_date,
+        end_date: allocationFormData.end_date,
+        allocation_percentage: percentage,
+        tenant_id: currentTenant.id
+      };
+
+      if (isEdit && editingAllocationId) {
+        console.log('updating allocation', editingAllocationId, allocationData);
+        const response = await updateAllocation(supabase, { id: editingAllocationId, ...allocationData });
+        if (response) {
+          toast({
+            title: "Success",
+            description: "Allocation updated successfully.",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to update allocation.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        const response = await addAllocation(supabase, allocationData);
+      }
+
+      // Reset form and refresh data
+      setAllocationFormData({
+        start_date: '',
+        end_date: '',
+        allocation_percentage: '',
+      });
+      setEditingAllocationId(null);
+      setAddingAllocationForEmployee(null);
+
+      // Refresh allocated employees
+      const { data: employees } = await supabase
+        .from('Employees')
+        .select(`
+          id,
+          given_name,
+          surname,
+          Allocations!inner (
+            id,
+            allocation_percentage,
+            start_date,
+            end_date
+          )
+        `)
+        .eq('tenant_id', currentTenant.id)
+        .eq('Allocations.project_id', projectId);
+
+      if (employees) {
+        setAllocatedEmployees(employees);
+      }
+    } catch (error) {
+      console.error('Error saving allocation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save allocation.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const AllocationForm = ({ 
+    employeeId, 
+    isEdit = false, 
+    currentAllocation = null 
+  }: { 
+    employeeId: string;
+    isEdit?: boolean;
+    currentAllocation?: any;
+  }) => {
+    return (
+      <div className="mt-2 space-y-2 border-t pt-2">
+        <div className="grid grid-cols-3 gap-2">
+          <div>
+            <Label htmlFor="start_date">Start Date</Label>
+            <Input
+              id="start_date"
+              type="date"
+              value={allocationFormData.start_date}
+              onChange={(e) => setAllocationFormData(prev => ({ ...prev, start_date: e.target.value }))}
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="end_date">End Date</Label>
+            <Input
+              id="end_date"
+              type="date"
+              value={allocationFormData.end_date}
+              onChange={(e) => setAllocationFormData(prev => ({ ...prev, end_date: e.target.value }))}
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="allocation_percentage">Allocation %</Label>
+            <Input
+              id="allocation_percentage"
+              type="number"
+              min="1"
+              max="100"
+              value={allocationFormData.allocation_percentage}
+              onChange={(e) => setAllocationFormData(prev => ({ ...prev, allocation_percentage: e.target.value }))}
+              required
+            />
+          </div>
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setEditingAllocationId(null);
+              setAddingAllocationForEmployee(null);
+              setAllocationFormData({
+                start_date: '',
+                end_date: '',
+                allocation_percentage: '',
+              });
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => handleAllocationSubmit(employeeId, isEdit)}
+          >
+            {isEdit ? 'Update' : 'Add'} Allocation
+          </Button>
+        </div>
       </div>
     );
   };
@@ -848,6 +1290,18 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
           </CardContent>
         </Card>
       </main>
+      {projectId && ( // Only show in edit mode
+        <div className="p-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Allocated Employees</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <AllocatedEmployees />
+            </CardContent>
+          </Card>
+        </div>
+      )}
       <div className="p-8">
         <Card>
           <CardHeader>
