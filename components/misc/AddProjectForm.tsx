@@ -70,6 +70,7 @@ interface Client {
 interface Knowledge {
   id: string;
   title: string;
+  weight?: number;
 }
 
 interface EmployeeSuggestion {
@@ -476,8 +477,9 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
           employee.knowledges.forEach(knowledgeId => {
             const knowledge = knowledges.find(k => k.id === knowledgeId);
             if (knowledge) {
+              const knowledgeWeight = knowledge.weight ?? 1;
               workload[employee.id][weekKey] = (workload[employee.id][weekKey] || 0) + 
-                knowledge.weight;
+                knowledgeWeight;
             }
           });
         });
