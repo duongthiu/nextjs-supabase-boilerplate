@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -72,12 +72,6 @@ interface Knowledge {
   title: string;
 }
 
-interface TimeSlot {
-  start: Date;
-  end: Date;
-  allocation: number;
-}
-
 interface EmployeeSuggestion {
   id: string;
   given_name: string;
@@ -117,7 +111,15 @@ const getCellColor = (workload: number) => {
 };
 
 export default function AddProjectForm({ projectId }: { projectId: string | null }) {
-  const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [projectDates, setProjectDates] = useState({
+    start_date: '',
+    end_date: ''
+  });
+  const [formData, setFormData] = useState({
+    ...initialFormData,
+    start_date: undefined,  // Remove these from formData
+    end_date: undefined,    // Remove these from formData
+  });
   const [error, setError] = useState<string | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -126,7 +128,7 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
   const supabase: SupabaseClient = createClient();
   const { currentTenant } = useTenant();
   const [knowledges, setKnowledges] = useState<Knowledge[]>([]);
-  const [selectedKnowledges, setSelectedKnowledges] = useState<string[]>([]);
+  const [projectKnowledges, setProjectKnowledges] = useState<string[]>([]);
   const [knowledgeSearchOpen, setKnowledgeSearchOpen] = useState(false);
   const [employeeSuggestions, setEmployeeSuggestions] = useState<EmployeeSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -138,12 +140,36 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
     end_date: '',
     allocation_percentage: '',
   });
+  const [showAllocated, setShowAllocated] = useState(false);
+
+  // Move weeksArray calculation to parent component
+  const weeksArray = useMemo(() => {
+    if (!projectDates.start_date || !projectDates.end_date) return [];
+
+    const result = [];
+    const projectStart = new Date(projectDates.start_date);
+    const projectEnd = new Date(projectDates.end_date);
+
+    // Start from the project start date
+    let currentDate = startOfWeek(projectStart);
+    
+    // Calculate weeks until project end
+    while (currentDate <= projectEnd) {
+      const weekEnd = endOfWeek(currentDate);
+      result.push({
+        start: currentDate,
+        end: weekEnd,
+        days: eachDayOfInterval({ start: currentDate, end: weekEnd })
+      });
+      currentDate = addWeeks(currentDate, 1);
+    }
+
+    return result;
+  }, [projectDates.start_date, projectDates.end_date]);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!currentTenant) {
-        return;
-      }
+      if (!currentTenant) return;
 
       try {
         setLoading(true);
@@ -166,17 +192,21 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
             setFormData({
               ...initialFormData,
               ...project,
-              start_date: project.start_date ? project.start_date.split('T')[0] : '',
-              end_date: project.end_date ? project.end_date.split('T')[0] : '',
               billable: project.billable?.toString() || 'false',
               deal_status: project.deal_status || 'PENDING',
+            });
+            
+            // Set dates separately
+            setProjectDates({
+              start_date: project.start_date ? project.start_date.split('T')[0] : '',
+              end_date: project.end_date ? project.end_date.split('T')[0] : '',
             });
           }
 
           // If editing, fetch project's knowledges
           const projectKnowledges = await getProjectKnowledges(supabase, projectId);
           if (projectKnowledges) {
-            setSelectedKnowledges(projectKnowledges.map(pk => pk.knowledge_id));
+            setProjectKnowledges(projectKnowledges.map(pk => pk.knowledge_id));
           }
         }
       } catch (error) {
@@ -221,16 +251,23 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
     fetchAllocatedEmployees();
   }, [projectId, currentTenant]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-  };
+    
+    if (name === 'start_date' || name === 'end_date') {
+      setProjectDates(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      }));
+    }
+  }, []);
 
   const handleSelectChange = (name: string, value: string) => {
-    console.log('Selected value:', value);
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -255,6 +292,7 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
       let data;
       const projectData = {
         ...formData,
+        ...projectDates,  // Include dates from separate state
         tenant_id: currentTenant.id
       };
 
@@ -262,14 +300,14 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
         data = await updateProject(supabase, { id: projectId, ...projectData });
         // Update knowledges
         await removeProjectKnowledge(supabase, projectId);
-        if (selectedKnowledges.length > 0) {
-          await addProjectKnowledge(supabase, projectId, selectedKnowledges);
+        if (projectKnowledges.length > 0) {
+          await addProjectKnowledge(supabase, projectId, projectKnowledges);
         }
       } else {
         data = await addProject(supabase, projectData);
         // Add knowledges for new project
-        if (data && selectedKnowledges.length > 0) {
-          await addProjectKnowledge(supabase, data[0].id, selectedKnowledges);
+        if (data && projectKnowledges.length > 0) {
+          await addProjectKnowledge(supabase, data[0].id, projectKnowledges);
         }
       }
 
@@ -315,7 +353,7 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
   };
 
   const handleKnowledgeSelect = (knowledgeId: string) => {
-    setSelectedKnowledges(current => {
+    setProjectKnowledges(current => {
       if (current.includes(knowledgeId)) {
         return current.filter(id => id !== knowledgeId);
       }
@@ -324,104 +362,18 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
   };
 
   const removeKnowledge = (knowledgeId: string) => {
-    setSelectedKnowledges(current => current.filter(id => id !== knowledgeId));
-  };
-
-  // Helper function to get overlapping time slots
-  const getOverlappingTimeSlots = (allocations: any[]): TimeSlot[] => {
-    if (allocations.length === 0) return [];
-
-    // Sort all start and end dates
-    const events: Array<{ date: Date; isStart: boolean; allocation: number }> = [];
-    allocations.forEach(alloc => {
-      events.push({ 
-        date: new Date(alloc.start_date), 
-        isStart: true, 
-        allocation: alloc.allocation_percentage 
-      });
-      events.push({ 
-        date: new Date(alloc.end_date), 
-        isStart: false, 
-        allocation: alloc.allocation_percentage 
-      });
-    });
-
-    events.sort((a, b) => a.date.getTime() - b.date.getTime());
-
-    const timeSlots: TimeSlot[] = [];
-    let currentAllocation = 0;
-    let lastDate: Date | null = null;
-
-    events.forEach((event, index) => {
-      if (lastDate && currentAllocation > 0) {
-        timeSlots.push({
-          start: lastDate,
-          end: event.date,
-          allocation: currentAllocation
-        });
-      }
-
-      if (event.isStart) {
-        currentAllocation += event.allocation;
-      } else {
-        currentAllocation -= event.allocation;
-      }
-      
-      lastDate = event.date;
-    });
-
-    return timeSlots;
-  };
-
-  // Function to calculate available allocation for a given period
-  const getAvailableAllocation = (
-    timeSlots: TimeSlot[],
-    start: Date,
-    end: Date
-  ): { 
-    periods: Array<{ start: Date; end: Date; maxAllocation: number }> 
-  } => {
-    const periods: Array<{ start: Date; end: Date; maxAllocation: number }> = [];
-    let currentDate = new Date(start);
-
-    while (currentDate < end) {
-      const overlappingSlots = timeSlots.filter(slot => 
-        slot.start <= currentDate && slot.end >= currentDate
-      );
-
-      const currentAllocation = overlappingSlots.reduce(
-        (sum, slot) => sum + slot.allocation, 
-        0
-      );
-
-      const nextChange = overlappingSlots.length > 0
-        ? Math.min(
-            ...overlappingSlots.map(slot => slot.end.getTime()),
-            end.getTime()
-          )
-        : end.getTime();
-
-      periods.push({
-        start: new Date(currentDate),
-        end: new Date(nextChange),
-        maxAllocation: Math.max(0, 100 - currentAllocation)
-      });
-
-      currentDate = new Date(nextChange);
-    }
-
-    return { periods };
+    setProjectKnowledges(current => current.filter(id => id !== knowledgeId));
   };
 
   const updateEmployeeSuggestions = useCallback(async () => {
-    if (!currentTenant || selectedKnowledges.length === 0 || !formData.start_date || !formData.end_date) {
+    if (!currentTenant || projectKnowledges.length === 0 || !projectDates.start_date || !projectDates.end_date) {
       setEmployeeSuggestions([]);
       return;
     }
 
     try {
       const supabase = createClient();
-      const employees = await getEmployeeSuggestions(supabase, currentTenant.id, selectedKnowledges);
+      const employees = await getEmployeeSuggestions(supabase, currentTenant.id, projectKnowledges);
 
       // Map directly to EmployeeSuggestion type
       const suggestions = employees.map(employee => ({
@@ -440,77 +392,50 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
     } catch (error) {
       console.error('Error updating employee suggestions:', error);
     }
-  }, [currentTenant, selectedKnowledges, formData.start_date, formData.end_date]);
+  }, [currentTenant, projectKnowledges/*, projectDates.start_date, projectDates.end_date*/]);
 
   // Update suggestions when knowledges change
   useEffect(() => {
     updateEmployeeSuggestions();
-  }, [selectedKnowledges, updateEmployeeSuggestions]);
+  }, [projectKnowledges, updateEmployeeSuggestions]);
 
   // Update the EmployeeSuggestions component
-  const EmployeeSuggestions = () => {
-    // Generate weeks array for the entire project duration
-    const weeksArray = useMemo(() => {
-      if (!formData.start_date || !formData.end_date) return [];
-
-      const result = [];
-      const projectStart = new Date(formData.start_date);
-      const projectEnd = new Date(formData.end_date);
-      const today = new Date();
-
-      // Start from the project start date
-      let currentDate = startOfWeek(projectStart);
-      
-      // Calculate weeks until project end
-      while (currentDate <= projectEnd) {
-        const weekEnd = endOfWeek(currentDate);
-        result.push({
-          start: currentDate,
-          end: weekEnd,
-          days: eachDayOfInterval({ start: currentDate, end: weekEnd })
-        });
-        currentDate = addWeeks(currentDate, 1);
-      }
-
-      return result;
-    }, [formData.start_date, formData.end_date]);
-
-    // Calculate initial scroll position once for all employees
+  const EmployeeSuggestions = React.memo(() => {
+    // Remove weeksArray calculation from here
+    
     useEffect(() => {
-      if (weeksArray.length > 0) {
-        const scrollContainers = document.querySelectorAll('.employee-workload-scroll');
-        if (scrollContainers.length === 0) return;
+      if (!employeeSuggestions.length) return;
+      
+      const scrollContainers = document.querySelectorAll('.employee-workload-scroll');
+      if (scrollContainers.length === 0) return;
 
-        const today = new Date();
-        const projectStart = new Date(formData.start_date);
-        const projectEnd = new Date(formData.end_date);
-        
-        // Determine which week to focus on
-        let targetDate;
-        if (projectStart > today) {
-          targetDate = projectStart;
-        } else if (projectEnd < today) {
-          targetDate = projectEnd;
-        } else {
-          targetDate = today;
-        }
-
-        // Find the index of the target week
-        const targetWeekIndex = weeksArray.findIndex(week => 
-          targetDate >= week.start && targetDate <= week.end
-        );
-
-        if (targetWeekIndex !== -1) {
-          const weekWidth = 32; // w-8 = 2rem = 32px
-          scrollContainers.forEach(container => {
-            const scrollPosition = Math.max(0, (weekWidth * targetWeekIndex) - (container.clientWidth / 2));
-            requestAnimationFrame(() => {
-              container.scrollLeft = scrollPosition;
-            });
-          });
-        }
+      const today = new Date();
+      const projectStart = new Date(projectDates.start_date);
+      const projectEnd = new Date(projectDates.end_date);
+      
+      let targetDate;
+      if (projectStart > today) {
+        targetDate = projectStart;
+      } else if (projectEnd < today) {
+        targetDate = projectEnd;
+      } else {
+        targetDate = today;
       }
-    }, [weeksArray, formData.start_date, formData.end_date]);
+
+      const targetWeekIndex = weeksArray.findIndex(week => 
+        targetDate >= week.start && targetDate <= week.end
+      );
+
+      if (targetWeekIndex !== -1) {
+        const weekWidth = 32;
+        scrollContainers.forEach(container => {
+          const scrollPosition = Math.max(0, (weekWidth * targetWeekIndex) - (container.clientWidth / 2));
+          requestAnimationFrame(() => {
+            container.scrollLeft = scrollPosition;
+          });
+        });
+      }
+    }, [employeeSuggestions]);
 
     // Calculate workload for each employee per week
     const employeeWorkload = useMemo(() => {
@@ -538,6 +463,29 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
       return workload;
     }, [employeeSuggestions, weeksArray]);
 
+    // Calculate suggestions workload
+    const suggestionsWorkload = useMemo(() => {
+      const workload: Record<string, Record<string, number>> = {};
+
+      employeeSuggestions.forEach(employee => {
+        workload[employee.id] = {};
+
+        weeksArray.forEach(week => {
+          const weekKey = format(week.start, 'yyyy-MM-dd');
+          
+          employee.knowledges.forEach(knowledgeId => {
+            const knowledge = knowledges.find(k => k.id === knowledgeId);
+            if (knowledge) {
+              workload[employee.id][weekKey] = (workload[employee.id][weekKey] || 0) + 
+                knowledge.weight;
+            }
+          });
+        });
+      });
+
+      return workload;
+    }, [employeeSuggestions, knowledges, weeksArray]);
+
     return (
       <div className="mt-4">
         <div className="flex items-center space-x-2 mb-4">
@@ -549,7 +497,7 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
           <Label htmlFor="show-suggestions">Show Employee Suggestions</Label>
         </div>
 
-        {showSuggestions && selectedKnowledges.length > 0 && formData.start_date && formData.end_date && (
+        {showSuggestions && projectKnowledges.length > 0 && projectDates.start_date && projectDates.end_date && (
           <div className="space-y-4">
             {employeeSuggestions.length > 0 ? (
               employeeSuggestions.map((employee) => (
@@ -563,7 +511,7 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
                         {employee.given_name} {employee.surname}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        Matching skills: {employee.matching_skills}/{selectedKnowledges.length}
+                        Matching skills: {employee.matching_skills}/{projectKnowledges.length}
                       </div>
                     </div>
                     <Button
@@ -582,8 +530,8 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
                           setAddingAllocationForEmployee(employee.id);
                           // Pre-fill with project dates
                           setAllocationFormData({
-                            start_date: formData.start_date,
-                            end_date: formData.end_date,
+                            start_date: projectDates.start_date,
+                            end_date: projectDates.end_date,
                             allocation_percentage: '',
                           });
                         }
@@ -705,72 +653,18 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
         )}
       </div>
     );
-  };
+  });
 
-  const AllocatedEmployees = () => {
-    // Reuse the same weeksArray and scroll logic from EmployeeSuggestions
-    const weeksArray = useMemo(() => {
-      if (!formData.start_date || !formData.end_date) return [];
-
-      const result = [];
-      const projectStart = new Date(formData.start_date);
-      const projectEnd = new Date(formData.end_date);
-      const today = new Date();
-
-      // Start from the project start date
-      let currentDate = startOfWeek(projectStart);
-      
-      // Calculate weeks until project end
-      while (currentDate <= projectEnd) {
-        const weekEnd = endOfWeek(currentDate);
-        result.push({
-          start: currentDate,
-          end: weekEnd,
-          days: eachDayOfInterval({ start: currentDate, end: weekEnd })
-        });
-        currentDate = addWeeks(currentDate, 1);
-      }
-
-      return result;
-    }, [formData.start_date, formData.end_date]);
-
-    // Reuse the same scroll effect
-    useEffect(() => {
-      if (weeksArray.length > 0) {
-        const scrollContainers = document.querySelectorAll('.allocated-workload-scroll');
-        if (scrollContainers.length === 0) return;
-
-        const today = new Date();
-        const projectStart = new Date(formData.start_date);
-        const projectEnd = new Date(formData.end_date);
-        
-        let targetDate;
-        if (projectStart > today) {
-          targetDate = projectStart;
-        } else if (projectEnd < today) {
-          targetDate = projectEnd;
-        } else {
-          targetDate = today;
-        }
-
-        const targetWeekIndex = weeksArray.findIndex(week => 
-          targetDate >= week.start && targetDate <= week.end
-        );
-
-        if (targetWeekIndex !== -1) {
-          const weekWidth = 32;
-          scrollContainers.forEach(container => {
-            const scrollPosition = Math.max(0, (weekWidth * targetWeekIndex) - (container.clientWidth / 2));
-            requestAnimationFrame(() => {
-              container.scrollLeft = scrollPosition;
-            });
-          });
-        }
-      }
-    }, [weeksArray, formData.start_date, formData.end_date]);
+  // Memoize the AllocatedEmployees component
+  const AllocatedEmployees = React.memo(() => {
+    // Add a ref to track initial mount and scroll position
+    const isInitialMount = React.useRef(true);
+    const hasScrolledRef = React.useRef(false);
 
     // Calculate workload for allocated employees
     const employeeWorkload = useMemo(() => {
+      if (!allocatedEmployees.length) return {};
+
       const workload: Record<string, Record<string, number>> = {};
 
       allocatedEmployees.forEach(employee => {
@@ -792,7 +686,47 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
       });
 
       return workload;
-    }, [allocatedEmployees, weeksArray]);
+    }, [allocatedEmployees, weeksArray]); // Keep these dependencies
+
+    // Separate useEffect for initial scroll position
+    useEffect(() => {
+      // Skip if already scrolled or no employees
+      if (hasScrolledRef.current || !allocatedEmployees.length) return;
+      
+      const scrollContainers = document.querySelectorAll('.allocated-workload-scroll');
+      if (scrollContainers.length === 0) return;
+
+      const today = new Date();
+      const projectStart = new Date(projectDates.start_date);
+      const projectEnd = new Date(projectDates.end_date);
+      
+      let targetDate;
+      if (projectStart > today) {
+        targetDate = projectStart;
+      } else if (projectEnd < today) {
+        targetDate = projectEnd;
+      } else {
+        targetDate = today;
+      }
+
+      const targetWeekIndex = weeksArray.findIndex(week => 
+        targetDate >= week.start && targetDate <= week.end
+      );
+
+      if (targetWeekIndex !== -1) {
+        const weekWidth = 32;
+        scrollContainers.forEach(container => {
+          const scrollPosition = Math.max(0, (weekWidth * targetWeekIndex) - (container.clientWidth / 2));
+          requestAnimationFrame(() => {
+            container.scrollLeft = scrollPosition;
+          });
+        });
+      }
+
+      // Mark as scrolled
+      hasScrolledRef.current = true;
+    // Only run once when component mounts and allocatedEmployees is available
+    }, []);
 
     return (
       <div className="space-y-4">
@@ -912,7 +846,7 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
         )}
       </div>
     );
-  };
+  }, (prevProps, nextProps) => true); // Always return true to prevent re-renders from parent
 
   const handleAllocationSubmit = async (employeeId: string, isEdit: boolean) => {
     if (!currentTenant || !projectId) return;
@@ -938,7 +872,6 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
       };
 
       if (isEdit && editingAllocationId) {
-        console.log('updating allocation', editingAllocationId, allocationData);
         const response = await updateAllocation(supabase, { id: editingAllocationId, ...allocationData });
         if (response) {
           toast({
@@ -1158,7 +1091,7 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
                     id="start_date"
                     name="start_date"
                     type="date"
-                    value={formData.start_date || ''}
+                    value={projectDates.start_date}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -1168,7 +1101,7 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
                     id="end_date"
                     name="end_date"
                     type="date"
-                    value={formData.end_date || ''}
+                    value={projectDates.end_date}
                     onChange={handleInputChange}
                   />
                 </div>
@@ -1219,9 +1152,9 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
                         aria-expanded={knowledgeSearchOpen}
                         className="w-full justify-between"
                       >
-                        {selectedKnowledges.length === 0 
+                        {projectKnowledges.length === 0 
                           ? "Select required knowledge..." 
-                          : `${selectedKnowledges.length} selected`}
+                          : `${projectKnowledges.length} selected`}
                         <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
@@ -1240,9 +1173,9 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
                               <div className="flex items-center gap-2">
                                 <div className={cn(
                                   "h-4 w-4 border rounded-sm flex items-center justify-center",
-                                  selectedKnowledges.includes(knowledge.id) ? "bg-primary border-primary" : "border-input"
+                                  projectKnowledges.includes(knowledge.id) ? "bg-primary border-primary" : "border-input"
                                 )}>
-                                  {selectedKnowledges.includes(knowledge.id) && 
+                                  {projectKnowledges.includes(knowledge.id) && 
                                     <Check className="h-3 w-3 text-primary-foreground" />
                                   }
                                 </div>
@@ -1256,7 +1189,7 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
                   </Popover>
                   
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {selectedKnowledges.map((knowledgeId) => {
+                    {projectKnowledges.map((knowledgeId) => {
                       const knowledge = knowledges.find(k => k.id === knowledgeId);
                       return knowledge ? (
                         <Badge
@@ -1297,7 +1230,16 @@ export default function AddProjectForm({ projectId }: { projectId: string | null
               <CardTitle>Allocated Employees</CardTitle>
             </CardHeader>
             <CardContent>
-              <AllocatedEmployees />
+              <div className="flex items-center space-x-2 mb-4">
+                <Switch
+                  id="show-allocated"
+                  checked={showAllocated}
+                  onCheckedChange={setShowAllocated}
+                />
+                <Label htmlFor="show-allocated">Show Allocated Employees</Label>
+              </div>
+
+              {showAllocated && <AllocatedEmployees />}
             </CardContent>
           </Card>
         </div>
