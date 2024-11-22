@@ -5,8 +5,8 @@ import { redirect } from 'next/navigation';
 import { getUser } from '@/utils/supabase/queries';
 
 export default async function Allocations() {
-  const supabase = createClient();
-  const user = await getUser(supabase);
+  const supabase = await createClient();
+  const user = await await getUser(supabase);
   
   if (!user) {
     redirect('/auth/signin');

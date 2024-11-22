@@ -3,8 +3,13 @@ import { redirect } from 'next/navigation';
 import AuthForm, { AuthState } from '@/components/misc/AuthForm';
 import { Navbar } from '@/components/layout/Navbar';
 
-export default async function Auth({ params }: { params: { id: string } }) {
-  const supabase = createClient();
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default async function Auth({ params }: PageProps) {
+  const { id } = await params;
+  const supabase = await createClient();
 
   const {
     data: { user }
@@ -14,7 +19,7 @@ export default async function Auth({ params }: { params: { id: string } }) {
     return redirect('/');
   }
 
-  const currState = params.id as AuthState;
+  const currState = id as AuthState;
   if (!['signin', 'signup', 'forgot_password'].includes(currState)) {
     return redirect('/auth/signin');
   }

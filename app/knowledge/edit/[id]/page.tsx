@@ -4,8 +4,13 @@ import AddKnowledgeForm from '@/components/misc/AddKnowledgeForm';
 import { redirect } from 'next/navigation';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 
-export default async function EditKnowledge({ params }: { params: { id: string } }) {
-  const supabase = createClient();
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default async function EditKnowledge({ params }: PageProps) {
+  const { id } = await params;
+  const supabase = await createClient();
   const user = await getUser(supabase);
   
   if (!user) {
@@ -14,7 +19,7 @@ export default async function EditKnowledge({ params }: { params: { id: string }
 
   return (
     <DashboardLayout user={user}>
-      <AddKnowledgeForm knowledgeId={params.id} />
+      <AddKnowledgeForm knowledgeId={id} />
     </DashboardLayout>
   );
 } 

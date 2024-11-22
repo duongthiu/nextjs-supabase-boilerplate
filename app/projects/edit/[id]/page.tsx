@@ -4,8 +4,13 @@ import AddProjectForm from '@/components/misc/AddProjectForm';
 import { redirect } from 'next/navigation';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 
-export default async function EditProject({ params }: { params: { id: string } }) {
-  const supabase = createClient();
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default async function EditProject({ params }: PageProps) {
+  const { id } = await params;
+  const supabase = await createClient();
   const user = await getUser(supabase);
   
   if (!user) {
@@ -14,7 +19,7 @@ export default async function EditProject({ params }: { params: { id: string } }
 
   return (
     <DashboardLayout user={user}>
-      <AddProjectForm projectId={params.id} />
+      <AddProjectForm projectId={id} />
     </DashboardLayout>
   );
 }
