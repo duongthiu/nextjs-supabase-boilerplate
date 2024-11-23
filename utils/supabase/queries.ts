@@ -958,7 +958,8 @@ export async function getEmployeeContracts(
   supabase: SupabaseClient,
   tenantId: string,
   page?: number,
-  itemsPerPage?: number
+  itemsPerPage?: number,
+  employeeId?: string
 ) {
   try {
     let query = supabase
@@ -969,8 +970,13 @@ export async function getEmployeeContracts(
         position:Positions(title),
         contract_type:ContractTypes(name)
       `, { count: 'exact' })
-      .eq('tenant_id', tenantId)
-      .order('created_at', { ascending: false });
+      .eq('tenant_id', tenantId);
+
+    if (employeeId) {
+      query = query.eq('employee_id', employeeId);
+    }
+
+    query = query.order('start_date', { ascending: false });
 
     if (page && itemsPerPage) {
       const from = (page - 1) * itemsPerPage;
