@@ -14,7 +14,7 @@ A comprehensive resource management system built with Next.js and Supabase, feat
 1. **Employee Management**
    - Basic employee information
    - Department assignments
-   - Knowledge/Skills tracking
+   - Knowledge tracking
    - Active/Inactive status
 
 2. **Department Management**
@@ -30,13 +30,13 @@ A comprehensive resource management system built with Next.js and Supabase, feat
 4. **Project Management**
    - Project details and status
    - Client association
-   - Required knowledge/skills
+   - Required knowledge
    - Project timeline tracking
 
 5. **Knowledge/Skills Management**
    - Skill definition and tracking
-   - Employee skill assignments
-   - Project skill requirements
+   - Employee knowledge assignments
+   - Project knowledge requirements
 
 6. **Resource Allocation**
    - Employee project assignments
@@ -49,7 +49,7 @@ A comprehensive resource management system built with Next.js and Supabase, feat
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14 (App Router), React, TypeScript
+- **Frontend**: Next.js 15 (App Router), React, TypeScript
 - **Backend**: Supabase (PostgreSQL)
 - **Styling**: Tailwind CSS, shadcn/ui
 - **State Management**: React Context

@@ -30,6 +30,7 @@ import {
   addEmployeeKnowledge, 
   removeEmployeeKnowledge 
 } from '@/utils/supabase/queries';
+import { DepartmentSelect } from "@/components/ui/department-select";
 
 interface FormattedDepartment extends Department {
   level: number;
@@ -355,24 +356,11 @@ export default function AddEmployeeForm({ employeeId }: { employeeId: string | n
               </div>
               <div>
                 <Label htmlFor="departments">Departments</Label>
-                <Select 
+                <DepartmentSelect
                   value={selectedDepartments.join(',')}
                   onValueChange={(value) => setSelectedDepartments(value.split(',').filter(Boolean))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select departments" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map((dept) => (
-                      <SelectItem 
-                        key={dept.id} 
-                        value={dept.id}
-                      >
-                        {dept.displayName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Select departments"
+                />
               </div>
 
               <div>

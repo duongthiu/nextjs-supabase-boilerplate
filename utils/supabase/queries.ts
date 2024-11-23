@@ -739,3 +739,118 @@ export async function getEmployeeSuggestions(
 
   return employees || [];
 }
+
+export async function getPositions(
+  supabase: SupabaseClient,
+  tenantId: string,
+  page?: number,
+  itemsPerPage?: number
+) {
+  try {
+    let query = supabase
+      .from('Positions')
+      .select(`
+        *,
+        department:Departments(name)
+      `, { count: 'exact' })
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false });
+
+    if (page && itemsPerPage) {
+      const from = (page - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+      query = query.range(from, to);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      throw error;
+    }
+
+    // Transform the data to match the Position interface
+    const positions = data.map(position => ({
+      id: position.id,
+      title: position.title,
+      department_id: position.department_id,
+      department_name: position.department?.name,
+      level: position.level,
+      is_active: position.is_active
+    }));
+
+    return { positions, count };
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+
+export async function getPosition(
+  supabase: SupabaseClient,
+  positionId: string
+) {
+  try {
+    const { data, error } = await supabase
+      .from('Positions')
+      .select(`
+        *,
+        department:Departments(id, name)
+      `)
+      .eq('id', positionId)
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+
+export async function addPosition(
+  supabase: SupabaseClient,
+  positionData: any
+) {
+  try {
+    const { data, error } = await supabase
+      .from('Positions')
+      .insert([positionData])
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+
+export async function updatePosition(
+  supabase: SupabaseClient,
+  positionData: any
+) {
+  try {
+    const { data, error } = await supabase
+      .from('Positions')
+      .update(positionData)
+      .eq('id', positionData.id)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}

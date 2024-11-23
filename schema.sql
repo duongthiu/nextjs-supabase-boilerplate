@@ -208,3 +208,18 @@ create index if not exists "Allocations_tenant_id_idx" on public."Allocations" u
 create index if not exists idx_employee_allocation on public."Allocations" using btree (employee_id, start_date, end_date) tablespace pg_default;
 
 create index if not exists idx_project_allocation on public."Allocations" using btree (project_id, start_date, end_date) tablespace pg_default;
+
+
+CREATE TABLE public."Positions" (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  title VARCHAR(255) NOT NULL,
+  department_id uuid,
+  level VARCHAR(50),
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  tenant_id uuid NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT positions_pkey PRIMARY KEY (id),
+  CONSTRAINT tenant_fk FOREIGN KEY (tenant_id) REFERENCES "Tenants" (id),
+  CONSTRAINT department_fk FOREIGN KEY (department_id) REFERENCES "Departments" (id)
+);
