@@ -1301,3 +1301,214 @@ export async function updateWorkScheduleType(
     throw error;
   }
 }
+
+export async function getWorkLogs(
+  supabase: SupabaseClient,
+  tenantId: string,
+  employeeId?: string,
+  startDate?: string,
+  endDate?: string,
+  page?: number,
+  itemsPerPage?: number
+) {
+  try {
+    let query = supabase
+      .from('WorkLogs')
+      .select(`
+        *,
+        employee:Employees(given_name, surname),
+        schedule_type:WorkScheduleTypes(name, multiplier),
+        approver:Employees(given_name, surname)
+      `, { count: 'exact' })
+      .eq('tenant_id', tenantId)
+      .order('date', { ascending: false });
+
+    if (employeeId) {
+      query = query.eq('employee_id', employeeId);
+    }
+
+    if (startDate) {
+      query = query.gte('date', startDate);
+    }
+
+    if (endDate) {
+      query = query.lte('date', endDate);
+    }
+
+    if (page && itemsPerPage) {
+      const from = (page - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+      query = query.range(from, to);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      throw error;
+    }
+
+    const workLogs = data.map(log => ({
+      ...log,
+      employee_name: `${log.employee.given_name} ${log.employee.surname}`,
+      schedule_type_name: log.schedule_type.name,
+      schedule_type_multiplier: log.schedule_type.multiplier,
+      approver_name: log.approver ? `${log.approver.given_name} ${log.approver.surname}` : null
+    }));
+
+    return { workLogs, count };
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+
+export async function getWorkLog(
+  supabase: SupabaseClient,
+  workLogId: string
+) {
+  try {
+    const { data, error } = await supabase
+      .from('WorkLogs')
+      .select(`
+        *,
+        employee:Employees(id, given_name, surname),
+        schedule_type:WorkScheduleTypes(id, name, multiplier)
+      `)
+      .eq('id', workLogId)
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+
+export async function addWorkLog(
+  supabase: SupabaseClient,
+  workLogData: any
+) {
+  try {
+    const { data, error } = await supabase
+      .from('WorkLogs')
+      .insert([workLogData])
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+
+export async function updateWorkLog(
+  supabase: SupabaseClient,
+  workLogData: any
+) {
+  try {
+    const { data, error } = await supabase
+      .from('WorkLogs')
+      .update(workLogData)
+      .eq('id', workLogData.id)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+
+export async function approveWorkLog(
+  supabase: SupabaseClient,
+  workLogId: string,
+  approverId: string
+) {
+  try {
+    const { data, error } = await supabase
+      .from('WorkLogs')
+      .update({
+        status: 'approved',
+        approved_by: approverId,
+        approved_at: new Date().toISOString()
+      })
+      .eq('id', workLogId)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+
+export async function rejectWorkLog(
+  supabase: SupabaseClient,
+  workLogId: string,
+  approverId: string
+) {
+  try {
+    const { data, error } = await supabase
+      .from('WorkLogs')
+      .update({
+        status: 'rejected',
+        approved_by: approverId,
+        approved_at: new Date().toISOString()
+      })
+      .eq('id', workLogId)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+
+export async function bulkAddWorkLogs(
+  supabase: SupabaseClient,
+  workLogs: any[]
+) {
+  try {
+    const { data, error } = await supabase
+      .from('WorkLogs')
+      .insert(workLogs.map(log => ({
+        ...log,
+        status: 'pending'
+      })))
+      .select();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}

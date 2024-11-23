@@ -281,3 +281,23 @@ CREATE TABLE public."WorkScheduleTypes" (
   CONSTRAINT work_schedule_types_pkey PRIMARY KEY (id),
   CONSTRAINT tenant_fk FOREIGN KEY (tenant_id) REFERENCES "Tenants" (id)
 );
+
+CREATE TABLE public."WorkLogs" (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  employee_id uuid NOT NULL,
+  schedule_type_id uuid NOT NULL,
+  date DATE NOT NULL,
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL,
+  break_duration INTEGER NOT NULL DEFAULT 0, -- in minutes
+  description TEXT,
+  status VARCHAR(20) NOT NULL, -- pending, approved, rejected
+  approved_by uuid,
+  approved_at TIMESTAMPTZ,
+  tenant_id uuid NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT work_logs_pkey PRIMARY KEY (id),
+  CONSTRAINT employee_fk FOREIGN KEY (employee_id) REFERENCES "Employees" (id),
+  CONSTRAINT schedule_type_fk FOREIGN KEY (schedule_type_id) REFERENCES "WorkScheduleTypes" (id),
+  CONSTRAINT tenant_fk FOREIGN KEY (tenant_id) REFERENCES "Tenants" (id)
+);
