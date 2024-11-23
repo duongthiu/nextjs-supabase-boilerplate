@@ -170,8 +170,15 @@ export default function AddEmployeeForm({ employeeId }: { employeeId: string | n
       const supabase = createClient();
       const employeeData = {
         ...formData,
-        tenant_id: currentTenant.id
+        birth_date: (formData as Employee).birth_date || undefined,
+        tenant_id: currentTenant.id,
+        is_deleted: false
       };
+
+      // Remove empty birth_date if it exists
+      if (!employeeData.birth_date) {
+        delete employeeData.birth_date;
+      }
 
       if (employeeId) {
         await updateEmployee(supabase, { id: employeeId, ...employeeData });
