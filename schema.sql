@@ -270,3 +270,14 @@ CREATE TABLE public."PublicHolidays" (
   CONSTRAINT public_holidays_pkey PRIMARY KEY (id),
   CONSTRAINT tenant_fk FOREIGN KEY (tenant_id) REFERENCES "Tenants" (id)
 );
+
+
+CREATE TABLE public."WorkScheduleTypes" (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name VARCHAR(50) NOT NULL, -- regular, weekend, holiday
+  multiplier DECIMAL(4,2) NOT NULL, -- 1.0 for regular, 1.5 for overtime, 2.0 for holiday
+  tenant_id uuid NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT work_schedule_types_pkey PRIMARY KEY (id),
+  CONSTRAINT tenant_fk FOREIGN KEY (tenant_id) REFERENCES "Tenants" (id)
+);

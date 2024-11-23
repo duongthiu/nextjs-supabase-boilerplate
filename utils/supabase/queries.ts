@@ -1202,3 +1202,102 @@ export async function bulkAddPublicHolidays(
     throw error;
   }
 }
+
+export async function getWorkScheduleTypes(
+  supabase: SupabaseClient,
+  tenantId: string,
+  page?: number,
+  itemsPerPage?: number
+) {
+  try {
+    let query = supabase
+      .from('WorkScheduleTypes')
+      .select('*', { count: 'exact' })
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false });
+
+    if (page && itemsPerPage) {
+      const from = (page - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+      query = query.range(from, to);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      throw error;
+    }
+
+    return { scheduleTypes: data, count };
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+
+export async function getWorkScheduleType(
+  supabase: SupabaseClient,
+  scheduleTypeId: string
+) {
+  try {
+    const { data, error } = await supabase
+      .from('WorkScheduleTypes')
+      .select('*')
+      .eq('id', scheduleTypeId)
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+
+export async function addWorkScheduleType(
+  supabase: SupabaseClient,
+  scheduleTypeData: any
+) {
+  try {
+    const { data, error } = await supabase
+      .from('WorkScheduleTypes')
+      .insert([scheduleTypeData])
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+
+export async function updateWorkScheduleType(
+  supabase: SupabaseClient,
+  scheduleTypeData: any
+) {
+  try {
+    const { data, error } = await supabase
+      .from('WorkScheduleTypes')
+      .update(scheduleTypeData)
+      .eq('id', scheduleTypeData.id)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}

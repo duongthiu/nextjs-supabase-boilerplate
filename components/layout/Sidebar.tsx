@@ -1,7 +1,7 @@
 'use client'
 
 import { Button } from "@/components/ui/button";
-import { Users, Briefcase, X, ChevronLeft, ChevronRight, Calendar, FolderTree, BookOpen, FileText, Network, List } from "lucide-react";
+import { Users, Briefcase, X, ChevronLeft, ChevronRight, Calendar, FolderTree, BookOpen, FileText, Network, List, Clock } from "lucide-react";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Logo } from './Logo';
@@ -50,6 +50,11 @@ const NAVIGATION_ITEMS = [
         title: "Employee Contracts",
         href: "/employees/contracts",
         icon: FileText,
+      },
+      {
+        title: "Work Schedules",
+        href: "/employees/schedules",
+        icon: Clock,
       },
       {
         title: "Public Holidays",
