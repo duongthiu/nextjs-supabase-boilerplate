@@ -1075,3 +1075,130 @@ export async function updateEmployeeContract(
     throw error;
   }
 }
+
+export async function getPublicHolidays(
+  supabase: SupabaseClient,
+  tenantId: string,
+  year?: number,
+  page?: number,
+  itemsPerPage?: number
+) {
+  try {
+    let query = supabase
+      .from('PublicHolidays')
+      .select('*', { count: 'exact' })
+      .eq('tenant_id', tenantId)
+      .order('date', { ascending: true });
+
+    if (year) {
+      const startDate = `${year}-01-01`;
+      const endDate = `${year}-12-31`;
+      query = query.gte('date', startDate).lte('date', endDate);
+    }
+
+    if (page && itemsPerPage) {
+      const from = (page - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+      query = query.range(from, to);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      throw error;
+    }
+
+    return { holidays: data, count };
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+
+export async function getPublicHoliday(
+  supabase: SupabaseClient,
+  holidayId: string
+) {
+  try {
+    const { data, error } = await supabase
+      .from('PublicHolidays')
+      .select('*')
+      .eq('id', holidayId)
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+
+export async function addPublicHoliday(
+  supabase: SupabaseClient,
+  holidayData: any
+) {
+  try {
+    const { data, error } = await supabase
+      .from('PublicHolidays')
+      .insert([holidayData])
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+
+export async function updatePublicHoliday(
+  supabase: SupabaseClient,
+  holidayData: any
+) {
+  try {
+    const { data, error } = await supabase
+      .from('PublicHolidays')
+      .update(holidayData)
+      .eq('id', holidayData.id)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+
+export async function bulkAddPublicHolidays(
+  supabase: SupabaseClient,
+  holidays: any[]
+) {
+  try {
+    const { data, error } = await supabase
+      .from('PublicHolidays')
+      .insert(holidays)
+      .select();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}

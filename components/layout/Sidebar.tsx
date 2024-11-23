@@ -52,6 +52,11 @@ const NAVIGATION_ITEMS = [
         icon: FileText,
       },
       {
+        title: "Public Holidays",
+        href: "/employees/holidays",
+        icon: Calendar,
+      },
+      {
         title: "Departments",
         href: "/departments",
         icon: Network,

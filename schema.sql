@@ -260,3 +260,13 @@ CREATE TABLE public."EmployeeContracts" (
   CONSTRAINT position_fk FOREIGN KEY (position_id) REFERENCES "Positions" (id),
   CONSTRAINT tenant_fk FOREIGN KEY (tenant_id) REFERENCES "Tenants" (id)
 );
+
+CREATE TABLE public."PublicHolidays" (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  date DATE NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  tenant_id uuid NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT public_holidays_pkey PRIMARY KEY (id),
+  CONSTRAINT tenant_fk FOREIGN KEY (tenant_id) REFERENCES "Tenants" (id)
+);
