@@ -953,3 +953,119 @@ export async function updateContractType(
     throw error;
   }
 }
+
+export async function getEmployeeContracts(
+  supabase: SupabaseClient,
+  tenantId: string,
+  page?: number,
+  itemsPerPage?: number
+) {
+  try {
+    let query = supabase
+      .from('EmployeeContracts')
+      .select(`
+        *,
+        employee:Employees(given_name, surname),
+        position:Positions(title),
+        contract_type:ContractTypes(name)
+      `, { count: 'exact' })
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false });
+
+    if (page && itemsPerPage) {
+      const from = (page - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+      query = query.range(from, to);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      throw error;
+    }
+
+    const contracts = data.map(contract => ({
+      ...contract,
+      employee_name: `${contract.employee.given_name} ${contract.employee.surname}`,
+      position_title: contract.position.title,
+      contract_type_name: contract.contract_type.name
+    }));
+
+    return { contracts, count };
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+
+export async function getEmployeeContract(
+  supabase: SupabaseClient,
+  contractId: string
+) {
+  try {
+    const { data, error } = await supabase
+      .from('EmployeeContracts')
+      .select(`
+        *,
+        employee:Employees(id, given_name, surname),
+        position:Positions(id, title),
+        contract_type:ContractTypes(id, name)
+      `)
+      .eq('id', contractId)
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+
+export async function addEmployeeContract(
+  supabase: SupabaseClient,
+  contractData: any
+) {
+  try {
+    const { data, error } = await supabase
+      .from('EmployeeContracts')
+      .insert([contractData])
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+
+export async function updateEmployeeContract(
+  supabase: SupabaseClient,
+  contractData: any
+) {
+  try {
+    const { data, error } = await supabase
+      .from('EmployeeContracts')
+      .update(contractData)
+      .eq('id', contractData.id)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}

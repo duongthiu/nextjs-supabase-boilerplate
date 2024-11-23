@@ -47,6 +47,11 @@ const NAVIGATION_ITEMS = [
         icon: FileText,
       },
       {
+        title: "Employee Contracts",
+        href: "/employees/contracts",
+        icon: FileText,
+      },
+      {
         title: "Departments",
         href: "/departments",
         icon: Network,

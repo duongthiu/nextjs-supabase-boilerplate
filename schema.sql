@@ -235,3 +235,28 @@ CREATE TABLE public."ContractTypes" (
   CONSTRAINT contract_types_pkey PRIMARY KEY (id),
   CONSTRAINT tenant_fk FOREIGN KEY (tenant_id) REFERENCES "Tenants" (id)
 );
+
+CREATE TABLE public."EmployeeContracts" (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  employee_id uuid NOT NULL,
+  contract_type_id uuid NOT NULL,
+  position_id uuid NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE,
+  base_salary DECIMAL(12,2) NOT NULL,
+  currency VARCHAR(3) NOT NULL,
+  working_hours INTEGER, -- weekly working hours
+  overtime_rate DECIMAL(4,2), -- e.g., 1.5 for 150%
+  weekend_rate DECIMAL(4,2),
+  holiday_rate DECIMAL(4,2),
+  probation_period INTEGER, -- in months
+  notice_period INTEGER, -- in months
+  tenant_id uuid NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT employee_contracts_pkey PRIMARY KEY (id),
+  CONSTRAINT employee_fk FOREIGN KEY (employee_id) REFERENCES "Employees" (id),
+  CONSTRAINT contract_type_fk FOREIGN KEY (contract_type_id) REFERENCES "ContractTypes" (id),
+  CONSTRAINT position_fk FOREIGN KEY (position_id) REFERENCES "Positions" (id),
+  CONSTRAINT tenant_fk FOREIGN KEY (tenant_id) REFERENCES "Tenants" (id)
+);
