@@ -223,3 +223,15 @@ CREATE TABLE public."Positions" (
   CONSTRAINT tenant_fk FOREIGN KEY (tenant_id) REFERENCES "Tenants" (id),
   CONSTRAINT department_fk FOREIGN KEY (department_id) REFERENCES "Departments" (id)
 );
+
+CREATE TABLE public."ContractTypes" (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  payment_type VARCHAR(20) NOT NULL, -- monthly, hourly, one_time
+  tenant_id uuid NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT contract_types_pkey PRIMARY KEY (id),
+  CONSTRAINT tenant_fk FOREIGN KEY (tenant_id) REFERENCES "Tenants" (id)
+);

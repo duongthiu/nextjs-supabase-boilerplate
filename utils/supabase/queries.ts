@@ -854,3 +854,102 @@ export async function updatePosition(
     throw error;
   }
 }
+
+export async function getContractTypes(
+  supabase: SupabaseClient,
+  tenantId: string,
+  page?: number,
+  itemsPerPage?: number
+) {
+  try {
+    let query = supabase
+      .from('ContractTypes')
+      .select('*', { count: 'exact' })
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false });
+
+    if (page && itemsPerPage) {
+      const from = (page - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+      query = query.range(from, to);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      throw error;
+    }
+
+    return { contractTypes: data, count };
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+
+export async function getContractType(
+  supabase: SupabaseClient,
+  contractTypeId: string
+) {
+  try {
+    const { data, error } = await supabase
+      .from('ContractTypes')
+      .select('*')
+      .eq('id', contractTypeId)
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+
+export async function addContractType(
+  supabase: SupabaseClient,
+  contractTypeData: any
+) {
+  try {
+    const { data, error } = await supabase
+      .from('ContractTypes')
+      .insert([contractTypeData])
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+
+export async function updateContractType(
+  supabase: SupabaseClient,
+  contractTypeData: any
+) {
+  try {
+    const { data, error } = await supabase
+      .from('ContractTypes')
+      .update(contractTypeData)
+      .eq('id', contractTypeData.id)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
