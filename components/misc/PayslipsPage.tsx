@@ -8,6 +8,8 @@ import { format, subMonths, isBefore, isAfter, parse } from 'date-fns';
 import { getEmployeeContracts } from '@/utils/supabase/queries';
 import { useTenant } from '@/utils/tenant-context';
 import { toast } from '@/components/ui/use-toast';
+import { useRouter } from 'next/navigation';
+import { Badge } from "@/components/ui/badge";
 
 interface Contract {
   id: string;
@@ -16,9 +18,14 @@ interface Contract {
   end_date: string | null;
   position_title: string;
   contract_type_name: string;
+  payslip?: {
+    id: string;
+    status: 'draft' | 'approved' | 'paid';
+  };
 }
 
 export default function PayslipsPage() {
+  const router = useRouter();
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyyMM'));
   const [contracts, setContracts] = useState<Contract[]>([]);
   const { currentTenant } = useTenant();
@@ -46,10 +53,23 @@ export default function PayslipsPage() {
           );
         });
 
-        // Sort contracts by employee name
-        filteredContracts.sort((a, b) => a.employee_name.localeCompare(b.employee_name));
+        // Get payslip status for each contract
+        const monthStart = format(parse(`${selectedMonth}01`, 'yyyyMMdd', new Date()), 'yyyy-MM-dd');
+        const { data: payslips } = await supabase
+          .from('Payslips')
+          .select('id, contract_id, status')
+          .eq('period_start', monthStart);
 
-        setContracts(filteredContracts);
+        // Map payslips to contracts
+        const contractsWithPayslips = filteredContracts.map(contract => ({
+          ...contract,
+          payslip: payslips?.find(p => p.contract_id === contract.id)
+        }));
+
+        // Sort contracts by employee name
+        contractsWithPayslips.sort((a, b) => a.employee_name.localeCompare(b.employee_name));
+
+        setContracts(contractsWithPayslips);
       }
     } catch (error) {
       console.error('Error loading contracts:', error);
@@ -69,6 +89,22 @@ export default function PayslipsPage() {
       isAfter(otherContract.end_date ? parse(otherContract.end_date, 'yyyy-MM-dd', new Date()) : new Date(), parse(contract.start_date, 'yyyy-MM-dd', new Date()))
     );
     return overlapping ? 'bg-red-100' : '';
+  };
+
+  const getStatusBadge = (payslip?: { status: string }) => {
+    if (!payslip) {
+      return <Badge variant="outline">Not Created</Badge>;
+    }
+    switch (payslip.status) {
+      case 'draft':
+        return <Badge variant="secondary">Draft</Badge>;
+      case 'approved':
+        return <Badge variant="default">Approved</Badge>;
+      case 'paid':
+        return <Badge variant="success">Paid</Badge>;
+      default:
+        return null;
+    }
   };
 
   const months = Array.from({ length: 13 }, (_, i) => {
@@ -102,19 +138,22 @@ export default function PayslipsPage() {
               <th className="p-2">Contract Type</th>
               <th className="p-2">Start Date</th>
               <th className="p-2">End Date</th>
+              <th className="p-2">Status</th>
             </tr>
           </thead>
           <tbody>
             {contracts.map(contract => (
               <tr 
                 key={contract.id} 
-                className={`border-b hover:bg-muted/50 ${getRowStyle(contract)}`}
+                className={`border-b hover:bg-muted/50 cursor-pointer ${getRowStyle(contract)}`}
+                onClick={() => router.push(`/payslips/${selectedMonth}/${contract.id}`)}
               >
                 <td className="p-2">{contract.employee_name}</td>
                 <td className="p-2">{contract.position_title}</td>
                 <td className="p-2">{contract.contract_type_name}</td>
                 <td className="p-2">{format(new Date(contract.start_date), 'dd/MM/yyyy')}</td>
                 <td className="p-2">{contract.end_date ? format(new Date(contract.end_date), 'dd/MM/yyyy') : 'Ongoing'}</td>
+                <td className="p-2">{getStatusBadge(contract.payslip)}</td>
               </tr>
             ))}
           </tbody>
