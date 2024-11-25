@@ -108,7 +108,7 @@ export default function AddContractTypeForm({ contractTypeId }: { contractTypeId
         await addContractType(supabase, contractTypeData);
       }
 
-      router.push('/employees/contract-types');
+      router.push('/master/contract-types');
       toast({
         title: "Success",
         description: `Contract type ${contractTypeId ? 'updated' : 'added'} successfully.`,

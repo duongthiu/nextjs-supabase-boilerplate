@@ -150,7 +150,7 @@ export default function AddPositionForm({ positionId }: { positionId: string | n
         await addPosition(supabase, positionData);
       }
 
-      router.push('/employees/positions');
+      router.push('/master/positions');
       toast({
         title: "Success",
         description: `Position ${positionId ? 'updated' : 'added'} successfully.`,
@@ -238,7 +238,7 @@ export default function AddPositionForm({ positionId }: { positionId: string | n
                 <Button 
                   type="button" 
                   variant="outline" 
-                  onClick={() => router.push('/employees/positions')}
+                  onClick={() => router.push('/master/positions')}
                 >
                   Cancel
                 </Button>

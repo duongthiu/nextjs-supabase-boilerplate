@@ -97,7 +97,7 @@ export default function AddWorkScheduleTypeForm({ scheduleTypeId }: { scheduleTy
         await addWorkScheduleType(supabase, scheduleTypeData);
       }
 
-      router.push('/employees/schedules');
+      router.push('/master/schedules');
       toast({
         title: "Success",
         description: `Schedule type ${scheduleTypeId ? 'updated' : 'added'} successfully.`,
@@ -174,7 +174,7 @@ export default function AddWorkScheduleTypeForm({ scheduleTypeId }: { scheduleTy
                 <Button 
                   type="button" 
                   variant="outline" 
-                  onClick={() => router.push('/employees/schedules')}
+                  onClick={() => router.push('/master/schedules')}
                 >
                   Cancel
                 </Button>

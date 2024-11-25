@@ -90,7 +90,7 @@ export default function AddPublicHolidayForm({ holidayId }: { holidayId: string 
         await addPublicHoliday(supabase, holidayData);
       }
 
-      router.push('/employees/holidays');
+      router.push('/master/holidays');
       toast({
         title: "Success",
         description: `Holiday ${holidayId ? 'updated' : 'added'} successfully.`,
@@ -160,7 +160,7 @@ export default function AddPublicHolidayForm({ holidayId }: { holidayId: string 
                 <Button 
                   type="button" 
                   variant="outline" 
-                  onClick={() => router.push('/employees/holidays')}
+                  onClick={() => router.push('/master/holidays')}
                 >
                   Cancel
                 </Button>
