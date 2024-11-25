@@ -105,7 +105,7 @@ export default function ContractTypesPage({ user }: ContractTypesPageProps) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Contract Types</CardTitle>
-          <Link href="/employees/contract-types/add">
+          <Link href="/master/contract-types/add">
             <Button variant="default">+ Add New</Button>
           </Link>
         </CardHeader>
@@ -124,7 +124,7 @@ export default function ContractTypesPage({ user }: ContractTypesPageProps) {
                 <tr 
                   key={contractType.id} 
                   className="border-b hover:bg-muted/50 cursor-pointer"
-                  onClick={() => router.push(`/employees/contract-types/edit/${contractType.id}`)}
+                  onClick={() => router.push(`/master/contract-types/edit/${contractType.id}`)}
                 >
                   <td className="p-2">{contractType.name}</td>
                   <td className="p-2">{contractType.description}</td>
@@ -135,7 +135,7 @@ export default function ContractTypesPage({ user }: ContractTypesPageProps) {
                       size="icon"
                       onClick={(e) => {
                         e.stopPropagation();
-                        router.push(`/employees/contract-types/edit/${contractType.id}`);
+                        router.push(`/master/contract-types/edit/${contractType.id}`);
                       }}
                     >
                       <Settings className="h-4 w-4" />

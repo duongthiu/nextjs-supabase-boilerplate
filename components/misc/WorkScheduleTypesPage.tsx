@@ -100,7 +100,7 @@ export default function WorkScheduleTypesPage({ user }: WorkScheduleTypesPagePro
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Work Schedule Types</CardTitle>
-          <Link href="/employees/schedules/add">
+          <Link href="/master/schedules/add">
             <Button variant="default">+ Add New</Button>
           </Link>
         </CardHeader>
@@ -118,7 +118,7 @@ export default function WorkScheduleTypesPage({ user }: WorkScheduleTypesPagePro
                 <tr 
                   key={scheduleType.id} 
                   className="border-b hover:bg-muted/50 cursor-pointer"
-                  onClick={() => router.push(`/employees/schedules/edit/${scheduleType.id}`)}
+                  onClick={() => router.push(`/master/schedules/edit/${scheduleType.id}`)}
                 >
                   <td className="p-2">{scheduleType.name}</td>
                   <td className="p-2">{getMultiplierBadge(scheduleType.multiplier)}</td>
@@ -128,7 +128,7 @@ export default function WorkScheduleTypesPage({ user }: WorkScheduleTypesPagePro
                       size="icon"
                       onClick={(e) => {
                         e.stopPropagation();
-                        router.push(`/employees/schedules/edit/${scheduleType.id}`);
+                        router.push(`/master/schedules/edit/${scheduleType.id}`);
                       }}
                     >
                       <Settings className="h-4 w-4" />

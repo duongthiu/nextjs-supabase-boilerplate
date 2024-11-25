@@ -1,7 +1,7 @@
 'use client'
 
 import { Button } from "@/components/ui/button";
-import { Users, Briefcase, X, ChevronLeft, ChevronRight, Calendar, FolderTree, BookOpen, FileText, Network, List, Clock, ClipboardList } from "lucide-react";
+import { Users, Briefcase, X, ChevronLeft, ChevronRight, Calendar, FolderTree, BookOpen, FileText, Network, List, Clock, ClipboardList, Database } from "lucide-react";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Logo } from './Logo';
@@ -28,23 +28,18 @@ const NAVIGATION_ITEMS = [
     icon: Users,
   },
   {
-    title: "HR Management",
+    title: "HR",
     icon: Users,
     children: [
+      {
+        title: "Departments",
+        href: "/departments",
+        icon: Network,
+      },
       {
         title: "Employees",
         href: "/employees",
         icon: Users,
-      },
-      {
-        title: "Positions",
-        href: "/employees/positions",
-        icon: Briefcase,
-      },
-      {
-        title: "Contract Types",
-        href: "/employees/contract-types",
-        icon: FileText,
       },
       {
         title: "Employee Contracts",
@@ -52,28 +47,39 @@ const NAVIGATION_ITEMS = [
         icon: FileText,
       },
       {
-        title: "Work Schedules",
-        href: "/employees/schedules",
-        icon: Clock,
-      },
-      {
         title: "Work Logs",
         href: "/employees/logs",
         icon: ClipboardList,
       },
+    ]
+  },
+  {
+    title: "Master",
+    icon: Database,
+    children: [
+      {
+        title: "Contract Types",
+        href: "/master/contract-types",
+        icon: FileText,
+      },
+      {
+        title: "Work Schedules",
+        href: "/master/schedules",
+        icon: Clock,
+      },
       {
         title: "Public Holidays",
-        href: "/employees/holidays",
+        href: "/master/holidays",
         icon: Calendar,
       },
       {
-        title: "Departments",
-        href: "/departments",
-        icon: Network,
+        title: "Positions",
+        href: "/master/positions",
+        icon: Briefcase,
       },
       {
         title: "Knowledge",
-        href: "/knowledge",
+        href: "/master/knowledge",
         icon: BookOpen,
       },
     ]

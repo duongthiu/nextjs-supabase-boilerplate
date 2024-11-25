@@ -145,7 +145,7 @@ export default function PublicHolidaysPage({ user }: PublicHolidaysPageProps) {
                 }} />
               </DialogContent>
             </Dialog>
-            <Link href="/employees/holidays/add">
+            <Link href="/master/holidays/add">
               <Button variant="default">+ Add New</Button>
             </Link>
           </div>
