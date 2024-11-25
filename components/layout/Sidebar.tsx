@@ -51,6 +51,11 @@ const NAVIGATION_ITEMS = [
         href: "/work-logs",
         icon: ClipboardList,
       },
+      {
+        title: "Payslips",
+        href: "/payslips",
+        icon: FileText,
+      },
     ]
   },
   {
