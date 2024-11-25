@@ -159,7 +159,7 @@ export default function AddWorkLogForm({ workLogId, user }: AddWorkLogFormProps)
         await addWorkLog(supabase, workLogData);
       }
 
-      router.push('/employees/logs');
+      router.push('/work-logs');
       toast({
         title: "Success",
         description: `Work log ${workLogId ? 'updated' : 'added'} successfully.`,
@@ -188,7 +188,7 @@ export default function AddWorkLogForm({ workLogId, user }: AddWorkLogFormProps)
         title: "Success",
         description: "Work log approved successfully.",
       });
-      router.push('/employees/logs');
+      router.push('/work-logs');
     } catch (error) {
       console.error('Error approving work log:', error);
       toast({
@@ -206,7 +206,7 @@ export default function AddWorkLogForm({ workLogId, user }: AddWorkLogFormProps)
         title: "Success",
         description: "Work log rejected successfully.",
       });
-      router.push('/employees/logs');
+      router.push('/work-logs');
     } catch (error) {
       console.error('Error rejecting work log:', error);
       toast({
@@ -391,7 +391,7 @@ export default function AddWorkLogForm({ workLogId, user }: AddWorkLogFormProps)
                 <Button 
                   type="button" 
                   variant="outline" 
-                  onClick={() => router.push('/employees/logs')}
+                  onClick={() => router.push('/work-logs')}
                 >
                   Cancel
                 </Button>

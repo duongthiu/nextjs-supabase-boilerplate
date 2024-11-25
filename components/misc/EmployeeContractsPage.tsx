@@ -114,7 +114,7 @@ export default function EmployeeContractsPage({ user }: EmployeeContractsPagePro
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Employee Contracts</CardTitle>
-          <Link href="/employees/contracts/add">
+          <Link href="/contracts/add">
             <Button variant="default">+ Add New</Button>
           </Link>
         </CardHeader>
@@ -137,7 +137,7 @@ export default function EmployeeContractsPage({ user }: EmployeeContractsPagePro
                 <tr 
                   key={contract.id} 
                   className="border-b hover:bg-muted/50 cursor-pointer"
-                  onClick={() => router.push(`/employees/contracts/edit/${contract.id}`)}
+                  onClick={() => router.push(`/contracts/edit/${contract.id}`)}
                 >
                   <td className="p-2">{contract.employee_name}</td>
                   <td className="p-2">{contract.position_title}</td>
@@ -152,7 +152,7 @@ export default function EmployeeContractsPage({ user }: EmployeeContractsPagePro
                       size="icon"
                       onClick={(e) => {
                         e.stopPropagation();
-                        router.push(`/employees/contracts/edit/${contract.id}`);
+                        router.push(`/contracts/edit/${contract.id}`);
                       }}
                     >
                       <Settings className="h-4 w-4" />

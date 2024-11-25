@@ -183,7 +183,7 @@ export default function AddEmployeeContractForm({ contractId }: { contractId: st
         await addEmployeeContract(supabase, contractData);
       }
 
-      router.push('/employees/contracts');
+      router.push('/contracts');
       toast({
         title: "Success",
         description: `Contract ${contractId ? 'updated' : 'added'} successfully.`,
@@ -413,7 +413,7 @@ export default function AddEmployeeContractForm({ contractId }: { contractId: st
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => router.push('/employees/contracts')}
+                onClick={() => router.push('/contracts')}
               >
                 Cancel
               </Button>

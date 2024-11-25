@@ -551,7 +551,7 @@ export default function AddEmployeeForm({ employeeId }: { employeeId: string | n
                   <tr 
                     key={contract.id}
                     className={`border-b hover:bg-muted/50 cursor-pointer ${getRowStyle(contract)}`}
-                    onClick={() => router.push(`/employees/contracts/edit/${contract.id}`)}
+                    onClick={() => router.push(`/contracts/edit/${contract.id}`)}
                   >
                     <td className="p-2">{contract.position_title}</td>
                     <td className="p-2">{contract.contract_type_name}</td>

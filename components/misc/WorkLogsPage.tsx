@@ -198,7 +198,7 @@ export default function WorkLogsPage({ user }: WorkLogsPageProps) {
         size="icon"
         onClick={(e) => {
           e.stopPropagation();
-          router.push(`/employees/logs/edit/${log.id}`);
+          router.push(`/work-logs/edit/${log.id}`);
         }}
       >
         <Settings className="h-4 w-4" />
@@ -247,7 +247,7 @@ export default function WorkLogsPage({ user }: WorkLogsPageProps) {
             <div
               key={log.id}
               className="mb-2 p-2 bg-card rounded cursor-pointer hover:bg-muted"
-              onClick={() => router.push(`/employees/logs/edit/${log.id}`)}
+              onClick={() => router.push(`/work-logs/edit/${log.id}`)}
             >
               <div className="flex items-center justify-between">
                 <div className="font-medium text-sm">{log.employee_name}</div>
@@ -285,7 +285,7 @@ export default function WorkLogsPage({ user }: WorkLogsPageProps) {
                 log.status === 'rejected' ? 'bg-red-200 dark:bg-red-900/50' :
                 'bg-yellow-200 dark:bg-yellow-900/50'
               )}
-              onClick={() => router.push(`/employees/logs/edit/${log.id}`)}
+              onClick={() => router.push(`/work-logs/edit/${log.id}`)}
               title={`${log.employee_name} (${log.start_time} - ${log.end_time})`}
             >
               {log.employee_name.charAt(0).toUpperCase()}
@@ -392,7 +392,7 @@ export default function WorkLogsPage({ user }: WorkLogsPageProps) {
             >
               <Calendar className="h-4 w-4" />
             </Button>
-            <Link href="/employees/logs/add">
+            <Link href="/work-logs/add">
               <Button variant="default">+ Add New</Button>
             </Link>
           </div>
@@ -417,7 +417,7 @@ export default function WorkLogsPage({ user }: WorkLogsPageProps) {
                     <tr 
                       key={log.id} 
                       className="border-b hover:bg-muted/50 cursor-pointer"
-                      onClick={() => router.push(`/employees/logs/edit/${log.id}`)}
+                      onClick={() => router.push(`/work-logs/edit/${log.id}`)}
                     >
                       <td className="p-2">{log.employee_name}</td>
                       <td className="p-2">{format(new Date(log.date), 'dd/MM/yyyy')}</td>
@@ -437,7 +437,7 @@ export default function WorkLogsPage({ user }: WorkLogsPageProps) {
                           size="icon"
                           onClick={(e) => {
                             e.stopPropagation();
-                            router.push(`/employees/logs/edit/${log.id}`);
+                            router.push(`/work-logs/edit/${log.id}`);
                           }}
                         >
                           <Settings className="h-4 w-4" />

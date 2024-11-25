@@ -43,12 +43,12 @@ const NAVIGATION_ITEMS = [
       },
       {
         title: "Employee Contracts",
-        href: "/employees/contracts",
+        href: "/contracts",
         icon: FileText,
       },
       {
         title: "Work Logs",
-        href: "/employees/logs",
+        href: "/work-logs",
         icon: ClipboardList,
       },
     ]
