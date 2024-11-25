@@ -105,7 +105,7 @@ export default function PositionsPage({ user }: PositionsPageProps) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Position List</CardTitle>
-          <Link href="/employees/positions/add">
+          <Link href="/master/positions/add">
             <Button variant="default">+ Add New</Button>
           </Link>
         </CardHeader>
@@ -125,7 +125,7 @@ export default function PositionsPage({ user }: PositionsPageProps) {
                 <tr 
                   key={position.id} 
                   className="border-b hover:bg-muted/50 cursor-pointer"
-                  onClick={() => router.push(`/employees/positions/edit/${position.id}`)}
+                  onClick={() => router.push(`/master/positions/edit/${position.id}`)}
                 >
                   <td className="p-2">{position.title}</td>
                   <td className="p-2">{position.department_name}</td>
@@ -137,7 +137,7 @@ export default function PositionsPage({ user }: PositionsPageProps) {
                       size="icon"
                       onClick={(e) => {
                         e.stopPropagation();
-                        router.push(`/employees/positions/edit/${position.id}`);
+                        router.push(`/master/positions/edit/${position.id}`);
                       }}
                     >
                       <Settings className="h-4 w-4" />
