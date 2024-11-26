@@ -112,7 +112,7 @@ export default function AddWorkLogForm({ workLogId, user }: AddWorkLogFormProps)
               status: workLog.status,
               approved_by: workLog.approved_by,
               approved_at: workLog.approved_at,
-              dates: workLog.dates.map(date => ({
+              dates: workLog.dates.map((date: any) => ({
                 id: date.id,
                 date: date.date.split('T')[0],
                 required: date.required
