@@ -301,3 +301,23 @@ CREATE TABLE public."WorkLogs" (
   CONSTRAINT schedule_type_fk FOREIGN KEY (schedule_type_id) REFERENCES "WorkScheduleTypes" (id),
   CONSTRAINT tenant_fk FOREIGN KEY (tenant_id) REFERENCES "Tenants" (id)
 );
+
+CREATE TABLE public."Payslips" (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  contract_id uuid NOT NULL,
+  period_start DATE NOT NULL,
+  period_end DATE NOT NULL,
+  base_salary DECIMAL(12,2) NOT NULL,
+  total_allowances DECIMAL(12,2) NOT NULL DEFAULT 0,
+  total_overtime DECIMAL(12,2) NOT NULL DEFAULT 0,
+  total_deductions DECIMAL(12,2) NOT NULL DEFAULT 0,
+  net_salary DECIMAL(12,2) NOT NULL,
+  status VARCHAR(20) NOT NULL, -- draft, approved, paid
+  payment_date DATE,
+  tenant_id uuid NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT payslips_pkey PRIMARY KEY (id),
+  CONSTRAINT contract_fk FOREIGN KEY (contract_id) REFERENCES "EmployeeContracts" (id),
+  CONSTRAINT tenant_fk FOREIGN KEY (tenant_id) REFERENCES "Tenants" (id)
+);
