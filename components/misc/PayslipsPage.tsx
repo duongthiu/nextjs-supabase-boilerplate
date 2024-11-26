@@ -101,7 +101,7 @@ export default function PayslipsPage() {
       case 'approved':
         return <Badge variant="default">Approved</Badge>;
       case 'paid':
-        return <Badge variant="success">Paid</Badge>;
+        return <Badge variant="default" className="bg-green-600">Paid</Badge>;
       default:
         return null;
     }
