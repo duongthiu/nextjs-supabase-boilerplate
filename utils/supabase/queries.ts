@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { FileOptions } from '@supabase/storage-js';
+import { StorageError } from '@supabase/storage-js';
 
 export const getUser = async (supabase: SupabaseClient) => {
   const {
@@ -1970,10 +1970,10 @@ export async function addLeadDocument(
     const filePath = `leads/${documentData.lead_id}/${fileName}`;
 
     // Create upload options
-    const options: FileOptions = {
+    const options = {
       cacheControl: '3600',
       upsert: false
-    };
+    } as const;
 
     // Upload file to storage
     const { error: uploadError } = await supabase.storage
