@@ -1,5 +1,4 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { StorageError } from '@supabase/storage-js';
 
 export const getUser = async (supabase: SupabaseClient) => {
   const {
