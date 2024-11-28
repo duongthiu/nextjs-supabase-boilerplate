@@ -237,7 +237,7 @@ export default function LeadsPage() {
                 <tr 
                   key={lead.id} 
                   className="border-b hover:bg-muted/50 cursor-pointer"
-                  onClick={() => router.push(`/leads/edit/${lead.id}`)}
+                  onClick={() => router.push(`/leads/${lead.id}`)}
                 >
                   <td className="p-2">{lead.company_name}</td>
                   <td className="p-2">{lead.contact_name}</td>

@@ -415,6 +415,64 @@ CREATE TABLE public."LeadStageHistory" (
   CONSTRAINT lead_fk FOREIGN KEY (lead_id) REFERENCES "Leads" (id),
   CONSTRAINT from_stage_fk FOREIGN KEY (from_stage_id) REFERENCES "LeadStages" (id),
   CONSTRAINT to_stage_fk FOREIGN KEY (to_stage_id) REFERENCES "LeadStages" (id),
-  CONSTRAINT changed_by_fk FOREIGN KEY (changed_by) REFERENCES "Employees" (id),
+  -- CONSTRAINT changed_by_fk FOREIGN KEY (changed_by) REFERENCES "Employees" (id),
   CONSTRAINT tenant_fk FOREIGN KEY (tenant_id) REFERENCES "Tenants" (id)
 );
+
+
+-- Lead Activities
+CREATE TABLE public."LeadActivities" (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  lead_id uuid NOT NULL,
+  type VARCHAR(50) NOT NULL, -- email, call, meeting, note, task
+  subject VARCHAR(255) NOT NULL,
+  description TEXT,
+  activity_date TIMESTAMPTZ NOT NULL,
+  duration_minutes INTEGER,
+  status VARCHAR(50), -- planned, completed, cancelled
+  performed_by uuid NOT NULL,
+  tenant_id uuid NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  
+  CONSTRAINT lead_activities_pkey PRIMARY KEY (id),
+  CONSTRAINT lead_fk FOREIGN KEY (lead_id) REFERENCES "Leads" (id),
+  CONSTRAINT performed_by_fk FOREIGN KEY (performed_by) REFERENCES "Employees" (id),
+  CONSTRAINT tenant_fk FOREIGN KEY (tenant_id) REFERENCES "Tenants" (id)
+);
+
+-- Lead Documents
+CREATE TABLE public."LeadDocuments" (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  lead_id uuid NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  file_url VARCHAR(500) NOT NULL,
+  file_type VARCHAR(50) NOT NULL,
+  file_size INTEGER NOT NULL,
+  uploaded_by uuid NOT NULL,
+  tenant_id uuid NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  
+  CONSTRAINT lead_documents_pkey PRIMARY KEY (id),
+  CONSTRAINT lead_fk FOREIGN KEY (lead_id) REFERENCES "Leads" (id),
+  CONSTRAINT uploaded_by_fk FOREIGN KEY (uploaded_by) REFERENCES "Employees" (id),
+  CONSTRAINT tenant_fk FOREIGN KEY (tenant_id) REFERENCES "Tenants" (id)
+);
+
+-- Allow authenticated users to upload files
+CREATE POLICY "Allow authenticated uploads"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (bucket_id = 'lead-documents');
+
+-- Allow authenticated users to read files
+CREATE POLICY "Allow authenticated reads"
+ON storage.objects FOR SELECT
+TO authenticated
+USING (bucket_id = 'lead-documents');
+
+-- Allow authenticated users to delete files
+CREATE POLICY "Allow authenticated deletes"
+ON storage.objects FOR DELETE 
+TO authenticated
+USING (bucket_id = 'lead-documents');

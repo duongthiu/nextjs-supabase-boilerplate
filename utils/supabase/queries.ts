@@ -1,4 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import { FileOptions } from '@supabase/storage-js';
 
 export const getUser = async (supabase: SupabaseClient) => {
   const {
@@ -1876,4 +1877,187 @@ export async function getLeadsList(
   }
 
   return { leads, count };
+}
+
+export interface LeadActivity {
+  id: string;
+  lead_id: string;
+  type: 'email' | 'call' | 'meeting' | 'note' | 'task';
+  subject: string;
+  description?: string;
+  activity_date: string;
+  duration_minutes?: number;
+  status?: 'planned' | 'completed' | 'cancelled';
+  performed_by: string;
+  tenant_id: string;
+}
+
+export interface LeadDocument {
+  id: string;
+  lead_id: string;
+  name: string;
+  file_url: string;
+  file_type: string;
+  file_size: number;
+  uploaded_by: string;
+  tenant_id: string;
+}
+
+export async function getLeadActivities(supabase: SupabaseClient, leadId: string) {
+  const { data, error } = await supabase
+    .from('LeadActivities')
+    .select(`
+      *,
+      performed_by:Employees(given_name, surname)
+    `)
+    .eq('lead_id', leadId)
+    .order('activity_date', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching lead activities:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function addLeadActivity(supabase: SupabaseClient, activity: Omit<LeadActivity, 'id'>) {
+  const { data, error } = await supabase
+    .from('LeadActivities')
+    .insert([activity])
+    .select();
+
+  if (error) {
+    console.error('Error adding lead activity:', error);
+    throw error;
+  }
+
+  return data[0];
+}
+
+export async function getLeadDocuments(supabase: SupabaseClient, leadId: string) {
+  const { data, error } = await supabase
+    .from('LeadDocuments')
+    .select(`
+      *,
+      uploaded_by:Employees(given_name, surname)
+    `)
+    .eq('lead_id', leadId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching lead documents:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function addLeadDocument(
+  supabase: SupabaseClient, 
+  file: File,
+  documentData: {
+    lead_id: string;
+    uploaded_by: string;
+    tenant_id: string;
+  },
+  onProgress?: (progress: number) => void
+) {
+  try {
+    // Generate unique file name
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${crypto.randomUUID()}.${fileExt}`;
+    const filePath = `leads/${documentData.lead_id}/${fileName}`;
+
+    // Create upload options
+    const options: FileOptions = {
+      cacheControl: '3600',
+      upsert: false
+    };
+
+    // Upload file to storage
+    const { error: uploadError } = await supabase.storage
+      .from('lead-documents')
+      .upload(filePath, file, options);
+
+    if (uploadError) throw uploadError;
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('lead-documents')
+      .getPublicUrl(filePath);
+
+    // Create document record
+    const { data, error } = await supabase
+      .from('LeadDocuments')
+      .insert([{
+        lead_id: documentData.lead_id,
+        name: file.name,
+        file_url: publicUrl,
+        file_type: file.type,
+        file_size: file.size,
+        uploaded_by: documentData.uploaded_by,
+        tenant_id: documentData.tenant_id
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error adding document:', error);
+    throw error;
+  }
+}
+
+export async function getActiveEmployees(supabase: SupabaseClient, tenantId: string) {
+  const { data: employees, error } = await supabase
+    .from('Employees')
+    .select('id, given_name, surname')
+    .eq('tenant_id', tenantId)
+    .eq('is_deleted', false)
+    .order('surname');
+
+  if (error) {
+    console.error('Error fetching employees:', error);
+    return null;
+  }
+
+  return employees;
+}
+
+export async function deleteLeadDocument(
+  supabase: SupabaseClient,
+  document: {
+    id: string;
+    file_url: string;
+  }
+) {
+  try {
+    // Extract path from URL pattern: /leads/{leadId}/{filename}
+    const matches = document.file_url.match(/\/leads\/(.+?)\/([^/]+)$/);
+    if (!matches) throw new Error('Invalid file URL format');
+    
+    const filePath = `leads/${matches[1]}/${matches[2]}`;
+
+    // Delete file from storage
+    const { error: storageError } = await supabase.storage
+      .from('lead-documents')
+      .remove([filePath]);
+
+    if (storageError) throw storageError;
+
+    // Delete record from database
+    const { error: dbError } = await supabase
+      .from('LeadDocuments')
+      .delete()
+      .eq('id', document.id);
+
+    if (dbError) throw dbError;
+
+    return true;
+  } catch (error) {
+    console.error('Error deleting document:', error);
+    throw error;
+  }
 }

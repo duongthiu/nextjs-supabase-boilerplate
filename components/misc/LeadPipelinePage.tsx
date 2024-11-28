@@ -202,7 +202,7 @@ export default function LeadPipelinePage({ user }: LeadPipelinePageProps) {
   const handleCardClick = (leadId: string, e: React.MouseEvent) => {
     // Prevent click when dragging
     if (e.defaultPrevented) return;
-    router.push(`/leads/edit/${leadId}`);
+    router.push(`/leads/${leadId}`);
   };
 
   const getStageMetrics = (stageName: string) => {
