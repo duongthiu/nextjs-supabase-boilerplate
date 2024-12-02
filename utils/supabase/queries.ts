@@ -1565,34 +1565,20 @@ interface LeadData {
   source_id: string;
   current_stage_id: string;
   status: string;
-  assigned_to?: string;
+  assigned_to?: string | null;
   notes?: string;
   tenant_id: string;
 }
 
-// export async function createLead(
-//   supabase: SupabaseClient,
-//   leadData: LeadData
-// ) {
-//   const { data, error } = await supabase
-//     .from('Leads')
-//     .insert([leadData])
-//     .select()
-//     .single();
-
-//   if (error) {
-//     console.error('Error creating lead:', error);
-//     throw error;
-//   }
-
-//   return data;
-// }
-
-
 export async function addLead(supabase: SupabaseClient, leadData: LeadData) {
+  const cleanedData = {
+    ...leadData,
+    assigned_to: leadData.assigned_to || null
+  };
+
   const { data, error } = await supabase
     .from('Leads')
-    .insert([leadData])
+    .insert([cleanedData])
     .select();
 
   if (error) {
@@ -1603,32 +1589,15 @@ export async function addLead(supabase: SupabaseClient, leadData: LeadData) {
   return data;
 }
 
+export async function updateLead(supabase: SupabaseClient, leadData: LeadData) {
+  const cleanedData = {
+    ...leadData,
+    assigned_to: leadData.assigned_to || null
+  };
 
-// export async function updateLead(
-//   supabase: SupabaseClient,
-//   leadId: string,
-//   leadData: Partial<LeadData>
-// ) {
-//   const { data, error } = await supabase
-//     .from('Leads')
-//     .update(leadData)
-//     .eq('id', leadId)
-//     .select()
-//     .single();
-
-//   if (error) {
-//     console.error('Error updating lead:', error);
-//     throw error;
-//   }
-
-//   return data;
-// }
-
-
-export async function updateLead(supabase: SupabaseClient, leadData: any) {
   const { data, error } = await supabase
     .from('Leads')
-    .update(leadData)
+    .update(cleanedData)
     .eq('id', leadData.id)
     .select();
 
